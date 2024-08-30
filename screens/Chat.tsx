@@ -1,54 +1,39 @@
-import React, {
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useCallback
-} from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
-import { GiftedChat } from 'react-native-gifted-chat';
-import {
-  collection,
-  addDoc,
-  orderBy,
-  query,
-  onSnapshot
-} from 'firebase/firestore';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { GiftedChat, IMessage, InputToolbar } from 'react-native-gifted-chat';
+import { collection, addDoc, orderBy, query, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, database } from '../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { AntDesign } from '@expo/vector-icons';
 import colors from '../colors';
+import { RootStackParamList } from '../App';
 
-export default function Chat() {
 
-  const [messages, setMessages] = useState([]);
-  const navigation = useNavigation();
+type ChatScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Chat'>;
+
+const Chat: React.FC = () => {
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const navigation = useNavigation<ChatScreenNavigationProp>();
 
   const onSignOut = async () => {
-    console.log('Attempting to sign out...');
     try {
       await signOut(auth);
-      console.log('Sign out successful');
-      navigation.replace('Login'); // Asegúrate de que tienes una pantalla de inicio de sesión llamada 'Login'
+      navigation.replace('Login');
     } catch (error) {
       console.log('Error logging out: ', error);
     }
   };
 
   useLayoutEffect(() => {
-    console.log('Setting navigation options');
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          style={{
-            marginRight: 10
-          }}
-          onPress={() => {
-            console.log('Sign out button pressed');
-            onSignOut();
-          }}
+          style={{ marginRight: 10 }}
+          onPress={onSignOut}
         >
-          <AntDesign name="logout" size={24} color={colors.gray} style={{marginRight: 10}}/>
+          <AntDesign name="logout" size={24} color={colors.gray} />
         </TouchableOpacity>
       )
     });
@@ -59,23 +44,20 @@ export default function Chat() {
     const q = query(collectionRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, querySnapshot => {
-      console.log('querySnapshot unsubscribe');
       setMessages(
         querySnapshot.docs.map(doc => ({
           _id: doc.data()._id,
           createdAt: doc.data().createdAt.toDate(),
           text: doc.data().text,
-          user: doc.data().user
+          user: doc.data().user,
         }))
       );
-    }, error => {
-      console.error("Firestore subscription error: ", error);
     });
 
     return unsubscribe;
   }, []);
 
-  const onSend = useCallback((messages = []) => {
+  const onSend = useCallback((messages: IMessage[] = []) => {
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
     );
@@ -90,8 +72,17 @@ export default function Chat() {
     });
   }, []);
 
+  const renderInputToolbar = (props: any) => {
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={styles.inputToolbar}
+      />
+    );
+  };
+
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <GiftedChat
         messages={messages}
         showAvatarForEveryMessage={false}
@@ -100,15 +91,22 @@ export default function Chat() {
         messagesContainerStyle={{
           backgroundColor: '#fff'
         }}
-        textInputStyle={{
-          backgroundColor: '#fff',
-          borderRadius: 20,
-        }}
+        renderInputToolbar={renderInputToolbar}
         user={{
-          _id: auth?.currentUser?.email,
+          _id: auth?.currentUser?.email || '',
           avatar: 'https://i.pravatar.cc/300'
         }}
       />
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  inputToolbar: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    margin: 8,
+  },
+});
+
+export default Chat;
