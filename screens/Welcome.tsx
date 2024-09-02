@@ -18,8 +18,8 @@ const CurvedContainer = styled.View`
   right: 0;
   height: 150px;
   background-color: #FFFFFF;
-  border-bottom-left-radius: 100px;
-  border-bottom-right-radius: 100px;
+  border-bottom-left-radius: 300px;
+  border-bottom-right-radius: 300px;
   align-items: center;
   justify-content: center;
   z-index: 1;

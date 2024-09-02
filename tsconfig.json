@@ -6,7 +6,8 @@
     "jsx": "react-native",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+
   },
   "exclude": [
     "node_modules",
@@ -15,5 +16,6 @@
     "jest.config.js",
     "build"
   ],
+  
   "extends": "expo/tsconfig.base"
 }
