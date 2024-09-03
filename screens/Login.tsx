@@ -8,7 +8,8 @@ import {
   StatusBar,
   ImageBackground,
   StyleSheet,
-  View
+  View,
+  ActivityIndicator
 } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebase";
@@ -173,6 +174,7 @@ export default function Login({ navigation }: LoginProps) {
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
   const sliderAnimation = useRef(new Animated.Value(0)).current;
@@ -265,13 +267,16 @@ export default function Login({ navigation }: LoginProps) {
     setPasswordError(false);
 
     if (email !== "" && password !== "") {
+      setIsLoading(true);
       signInWithEmailAndPassword(auth, email, password)
         .then(() => {
           console.log("Login success");
+          setIsLoading(false);
           setLoginSuccess(true);
         })
         .catch((err) => {
           console.log("Login error Firebase:", err.message);
+          setIsLoading(false);
 
           if (err.code === 'auth/invalid-email') {
             setEmailError(true);
@@ -395,7 +400,9 @@ export default function Login({ navigation }: LoginProps) {
                 onPress={onHandleLogin} 
                 style={[styles.animatedButton, { width: buttonWidth, height: buttonHeight, borderRadius }]}
               >
-                {loginSuccess ? (
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : loginSuccess ? (
                   <Ionicons name="checkmark" size={30} color="white" />
                 ) : (
                   <RoundedButtonText>Log in</RoundedButtonText>

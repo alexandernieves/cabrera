@@ -4,12 +4,15 @@ import {
   TouchableOpacity, 
   TextInput, 
   Alert, 
-  Animated 
+  Animated, 
+  ActivityIndicator 
 } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebase";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styled from 'styled-components/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../App';
 
 const InputContainer = styled(Animated.View)`
   flex-direction: row;
@@ -36,7 +39,7 @@ const ButtonContainer = styled.View`
   width: 100%;
 `;
 
-const RoundedButton = styled.TouchableOpacity`
+const RoundedButton = styled(Animated.createAnimatedComponent(TouchableOpacity))`
   background-color: #002368; /* Color de fondo azul oscuro */
   border-radius: 30px; /* Bordes redondeados */
   justify-content: center;
@@ -49,7 +52,8 @@ const RoundedButton = styled.TouchableOpacity`
 const RoundedButtonText = styled.Text`
   font-weight: bold;
   color: #fff; /* Texto blanco */
-  font-size: 18px; /* Tamaño de la fuente */
+  font-size: 18px;
+  border-radius: 100px;
 `;
 
 const TermsContainer = styled.View`
@@ -97,7 +101,9 @@ const ErrorText = styled.Text`
   margin-left: 12px;
 `;
 
-export default function Signup() {
+export default function Signup() { 
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -106,68 +112,134 @@ export default function Signup() {
   const [nameError, setNameError] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  const buttonWidth = useRef(new Animated.Value(300)).current;
+  const buttonHeight = useRef(new Animated.Value(58)).current;
+  const borderRadius = useRef(new Animated.Value(10)).current;
 
   const emailShake = useRef(new Animated.Value(0)).current;
   const passwordShake = useRef(new Animated.Value(0)).current;
   const nameShake = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (emailError) {
-      triggerShake(emailShake);
+    if (signupSuccess) {
+      Animated.parallel([
+        Animated.timing(buttonWidth, {
+          toValue: 58,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(buttonHeight, {
+          toValue: 58,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(borderRadius, {
+          toValue: 29,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        navigation.navigate('Success', {
+          nextScreen: 'Home', // Nombre de la pantalla destino
+        });
+      });
     }
-    if (passwordError) {
-      triggerShake(passwordShake);
-    }
-    if (nameError) {
-      triggerShake(nameShake);
+  }, [signupSuccess]);
+
+  useEffect(() => {
+    if (emailError || passwordError || nameError) {
+      Animated.sequence([
+        Animated.timing(emailShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(emailShake, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(emailShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(emailShake, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      Animated.sequence([
+        Animated.timing(passwordShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(passwordShake, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(passwordShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(passwordShake, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      Animated.sequence([
+        Animated.timing(nameShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(nameShake, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(nameShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(nameShake, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [emailError, passwordError, nameError]);
 
-  const triggerShake = (shakeAnim: Animated.Value | Animated.ValueXY) => {
-    Animated.sequence([
-      Animated.timing(shakeAnim, {
-        toValue: 10,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: -10,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 10,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
   const onHandleSignUp = () => {
-    let isValid = true;
-
     setEmailError(false);
     setPasswordError(false);
     setNameError(false);
 
     if (name === "") {
       setNameError(true);
-      isValid = false;
+      return;
     }
 
     if (email === "") {
       setEmailError(true);
-      isValid = false;
+      return;
     }
 
     if (password === "") {
       setPasswordError(true);
-      isValid = false;
+      return;
     }
 
     if (!acceptedTerms) {
@@ -175,11 +247,19 @@ export default function Signup() {
       return;
     }
 
-    if (isValid) {
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => console.log('Signup success'))
-        .catch((err) => Alert.alert("Signup error", err.message));
-    }
+    setIsLoading(true);
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        console.log('Signup success');
+        setIsLoading(false);
+        setSignupSuccess(true);
+      })
+      .catch((err) => {
+        console.error("Signup error", err.message);
+        setIsLoading(false);
+        Alert.alert("Signup error", err.message);
+      });
   };
 
   const togglePasswordVisibility = () => {
@@ -223,7 +303,7 @@ export default function Signup() {
       </InputContainer>
       {emailError && <ErrorText>Email is required</ErrorText>}
 
-      <InputContainer style={[passwordError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(passwordShake)]}>
+            <InputContainer style={[passwordError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(passwordShake)]}>
         <Icon name="lock-closed-outline" size={24} color="#888" />
         <StyledInput
           placeholder="Create a password"
@@ -258,8 +338,17 @@ export default function Signup() {
       </TermsContainer>
 
       <ButtonContainer>
-        <RoundedButton onPress={onHandleSignUp}>
-          <RoundedButtonText>Sign Up</RoundedButtonText>
+        <RoundedButton 
+          onPress={onHandleSignUp} 
+          style={{ width: buttonWidth, height: buttonHeight, borderRadius }}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : signupSuccess ? (
+            <Ionicons name="checkmark" size={30} color="white" />
+          ) : (
+            <RoundedButtonText>Sign Up</RoundedButtonText>
+          )}
         </RoundedButton>
       </ButtonContainer>
     </>

@@ -22,7 +22,7 @@ export type RootStackParamList = {
   Home: undefined;
   Chat: undefined;
   NoInternet: undefined;
-  Success: undefined; 
+  Success: { nextScreen: string }; // Asegurarse de que Success acepta un parámetro
   PreloaderCircle: { nextScreen: keyof RootStackParamList }; // Incluye el tipo del parámetro nextScreen
 };
 

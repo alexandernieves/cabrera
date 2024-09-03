@@ -1,16 +1,17 @@
+import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import styled from 'styled-components/native';
 
-const SuccessAnimation = () => {
+const SuccessAnimation = ({ navigation }: { navigation: any }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const secondCircleScaleAnim = useRef(new Animated.Value(0)).current;
   const thirdCircleScaleAnim = useRef(new Animated.Value(0)).current;
+  const route = useRoute<RouteProp<{ params: { nextScreen?: string } }, 'params'>>();
 
   useEffect(() => {
     Animated.sequence([
-      // Escala del círculo más claro
       Animated.timing(thirdCircleScaleAnim, {
         toValue: 1,
         duration: 400,
@@ -21,7 +22,6 @@ const SuccessAnimation = () => {
         duration: 400,
         useNativeDriver: true,
       }),
-      // Escala del círculo oscuro y aparición del check
       Animated.parallel([
         Animated.timing(scaleAnim, {
           toValue: 1,
@@ -35,7 +35,15 @@ const SuccessAnimation = () => {
         }),
       ]),
     ]).start();
-  }, [scaleAnim, opacityAnim, secondCircleScaleAnim, thirdCircleScaleAnim]);
+
+    const timeoutId = setTimeout(() => {
+      navigation.navigate('PreloaderCircle', {
+        nextScreen: route.params?.nextScreen || 'Home',
+      });
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [scaleAnim, opacityAnim, secondCircleScaleAnim, thirdCircleScaleAnim, navigation, route.params?.nextScreen]);
 
   return (
     <Container>
@@ -45,7 +53,7 @@ const SuccessAnimation = () => {
         <AnimatedCircle style={{ transform: [{ scale: scaleAnim }] }} />
         <CheckMark style={{ opacity: opacityAnim }}>&#10003;</CheckMark>
       </CircleContainer>
-      <SuccessText>Your password has been changed{"\n"}successfully</SuccessText>
+      <SuccessText>You have registered successfully</SuccessText>
     </Container>
   );
 };
@@ -60,7 +68,7 @@ const Container = styled.View`
 const CircleContainer = styled.View`
   justify-content: center;
   align-items: center;
-  margin-bottom: 50px; /* Se agregó un margen para separar los círculos del texto */
+  margin-bottom: 50px;
 `;
 
 const AnimatedCircle = styled(Animated.View)`
@@ -74,7 +82,7 @@ const AnimatedCircle = styled(Animated.View)`
 const SecondAnimatedCircle = styled(Animated.View)`
   width: 150px;
   height: 150px;
-  background-color: #4A90E2; /* Color intermedio para el círculo */
+  background-color: #4A90E2;
   border-radius: 75px;
   position: absolute;
 `;
@@ -82,7 +90,7 @@ const SecondAnimatedCircle = styled(Animated.View)`
 const ThirdAnimatedCircle = styled(Animated.View)`
   width: 180px;
   height: 180px;
-  background-color: #A0C4FF; /* Color más claro para el círculo */
+  background-color: #A0C4FF;
   border-radius: 90px;
   position: absolute;
 `;
@@ -97,8 +105,8 @@ const SuccessText = styled.Text`
   font-size: 18px;
   color: #002368;
   text-align: center;
-  margin-top: 100px; /* Aumentado el margen superior */
-  line-height: 24px; /* Mejorada la legibilidad del texto */
+  margin-top: 100px;
+  line-height: 24px;
 `;
 
 export default SuccessAnimation;
