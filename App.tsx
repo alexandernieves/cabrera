@@ -11,7 +11,8 @@ import NoInternet from './screens/NoInternet';
 import ForgotPassword from './screens/ViewReset/ForgotPassword';
 import ConfirmCode from './screens/ViewReset/ConfirmCode'; 
 import SuccessAnimation from './components/SuccessAnimation';
-import PreloaderCircle from './components/PreloaderCircle';  // Importa el PreloaderCircle
+import PreloaderCircle from './components/PreloaderCircle';
+import { CustomDrawerNavigator } from './screens/menu/CustomDrawerNavigator'; // Ajusta la ruta según tu estructura de carpetas
 
 export type RootStackParamList = {
   welcome: undefined;
@@ -22,19 +23,64 @@ export type RootStackParamList = {
   Home: undefined;
   Chat: undefined;
   NoInternet: undefined;
-  Success: { nextScreen: string }; // Asegurarse de que Success acepta un parámetro
-  PreloaderCircle: { nextScreen: keyof RootStackParamList }; // Incluye el tipo del parámetro nextScreen
+  Success: { nextScreen: string };
+  PreloaderCircle: { nextScreen: keyof RootStackParamList };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+function MainStackNavigator() {
+  return (
+    <Stack.Navigator
+      initialRouteName="welcome"
+      screenOptions={{
+        headerShown: false,
+        ...TransitionPresets.FadeFromBottomAndroid,
+      }}
+    >
+      <Stack.Screen
+        name="welcome"
+        component={Welcome}
+      />
+      <Stack.Screen
+        name="Login"
+        component={Login}
+      />
+      <Stack.Screen
+        name="Signup"
+        component={Signup}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPassword}
+      />
+      <Stack.Screen
+        name="ConfirmCode"
+        component={ConfirmCode}
+      />
+      <Stack.Screen
+        name="Home"
+        component={Home}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={Chat}
+      />
+      <Stack.Screen
+        name="Success"
+        component={SuccessAnimation}
+      />
+      <Stack.Screen
+        name="PreloaderCircle"
+        component={PreloaderCircle}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function App() {
   const [isPreloading, setIsPreloading] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
-
-  const handlePreloaderFinish = () => {
-    setIsPreloading(false);
-  };
 
   return (
     <NavigationContainer>
@@ -50,57 +96,7 @@ export default function App() {
       ) : !isConnected ? (
         <NoInternet onRetry={() => setIsPreloading(true)} /> 
       ) : (
-        <Stack.Navigator
-          initialRouteName="welcome"
-          screenOptions={{
-            headerShown: false,
-            ...TransitionPresets.FadeFromBottomAndroid,  // Configura la transición de desvanecido
-          }}
-        >
-          <Stack.Screen
-            name="welcome"
-            component={Welcome}
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="Login"
-            component={Login}
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="Signup"
-            component={Signup}
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="ForgotPassword"
-            component={ForgotPassword}
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="ConfirmCode"
-            component={ConfirmCode} // Registro de la nueva pantalla ConfirmCode
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="Home"
-            component={Home}
-          />
-          <Stack.Screen
-            name="Chat"
-            component={Chat}
-          />
-          <Stack.Screen
-            name="Success"
-            component={SuccessAnimation} // Registra la vista de éxito aquí
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen
-            name="PreloaderCircle"
-            component={PreloaderCircle} // Registra la vista del PreloaderCircle
-            options={{ headerShown: false }} 
-          />
-        </Stack.Navigator>
+        <CustomDrawerNavigator />
       )}
     </NavigationContainer>
   );

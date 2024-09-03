@@ -13,6 +13,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import styled from 'styled-components/native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const InputContainer = styled(Animated.View)`
   flex-direction: row;
@@ -250,8 +252,9 @@ export default function Signup() {
     setIsLoading(true);
 
     createUserWithEmailAndPassword(auth, email, password)
-      .then(() => {
+      .then(async () => {
         console.log('Signup success');
+        await AsyncStorage.setItem('username', name);  // Guarda el nombre de usuario
         setIsLoading(false);
         setSignupSuccess(true);
       })
