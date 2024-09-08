@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { 
   Text, 
   Image, 
@@ -8,22 +8,28 @@ import {
   StatusBar,
   ImageBackground,
   StyleSheet,
-  View,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebase";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styled from 'styled-components/native';
-import { NavigationProp, ParamListBase } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack'; 
+import { RootStackParamList } from '../App'; 
 import Signup from "./Signup";
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 const googleIcon = require("../assets/google.png");
 const facebookIcon = require("../assets/facebook.png");
 const background = require("../assets/volante_ford.jpg");
 
+interface DecodedToken {
+  role: string;
+}
+
 interface LoginProps {
-  navigation: NavigationProp<ParamListBase>;
+  navigation: StackNavigationProp<RootStackParamList, 'Login'>;
 }
 
 const CurvedContainer = styled.View`
@@ -119,14 +125,14 @@ const Icon = styled(Ionicons)`
 `;
 
 const ButtonContainer = styled.View`
- align-items: center;
+  align-items: center;
   margin-top: 10px;
   width: 100%;
 `;
 
 const RoundedButton = styled(Animated.createAnimatedComponent(TouchableOpacity))`
-  background-color: #002368; /* Color de fondo azul oscuro */
-  border-radius: 30px; /* Bordes redondeados */
+  background-color: #002368;
+  border-radius: 30px;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -167,126 +173,84 @@ const ForgotPasswordText = styled.Text`
   align-self: flex-end;
 `;
 
-export default function Login({ navigation }: LoginProps) {
+// Función para decodificar JWT sin dependencias externas
+function decodeJWT(token: string): DecodedToken | null {
+  try {
+    const base64Url = token.split('.')[1]; // Extraer la parte del payload
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); // Reemplazar caracteres de URL
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload); // Convertir el payload a objeto JSON
+  } catch (error) {
+    console.error("Error al decodificar el JWT", error);
+    return null;
+  }
+}
+
+export default function Login({ navigation }: LoginProps) { 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
   const sliderAnimation = useRef(new Animated.Value(0)).current;
-  const buttonWidth = useRef(new Animated.Value(300)).current;
-  const buttonHeight = useRef(new Animated.Value(58)).current;
-  const borderRadius = useRef(new Animated.Value(10)).current;
 
-  const emailShake = useRef(new Animated.Value(0)).current;
-  const passwordShake = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (loginSuccess) {
-      Animated.parallel([
-        Animated.timing(buttonWidth, {
-          toValue: 58,
-          duration: 300,
-          useNativeDriver: false, // Es necesario utilizar false para mantener la animación de ancho
-        }),
-        Animated.timing(buttonHeight, {
-          toValue: 58,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-        Animated.timing(borderRadius, {
-          toValue: 29,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-      ]).start(() => {
-        // Navegar al preloader y pasar la pantalla de destino
-        navigation.navigate('PreloaderCircle', {
-          nextScreen: 'Home', // Nombre de la pantalla destino
-        });
-      });
-    }
-  }, [loginSuccess]);
-
-  useEffect(() => {
-    if (emailError || passwordError) {
-      Animated.sequence([
-        Animated.timing(emailShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      Animated.sequence([
-        Animated.timing(passwordShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [emailError, passwordError]);
-
-  const onHandleLogin = () => {
+  // Función para manejar el login usando Axios
+  const handleLogin = async () => {
     setEmailError(false);
     setPasswordError(false);
 
     if (email !== "" && password !== "") {
       setIsLoading(true);
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          console.log("Login success");
-          setIsLoading(false);
-          setLoginSuccess(true);
-        })
-        .catch((err) => {
-          console.log("Login error Firebase:", err.message);
-          setIsLoading(false);
-
-          if (err.code === 'auth/invalid-email') {
-            setEmailError(true);
-          } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.message.includes('auth/invalid-login-credentials')) {
-            setEmailError(true);
-            setPasswordError(true);
-          } else {
-            console.log("Otro error de login:", err.message);
-          }
+      try {
+        // Realizar petición con Axios
+        const response = await axios.post('http://localhost:3000/login', {
+          email,
+          password
         });
+
+        const data = response.data;
+
+        if (data.token) {
+          // Almacenar el token en AsyncStorage
+          await AsyncStorage.setItem('jwtToken', data.token);
+
+          // Obtener y verificar el token
+          const token = await AsyncStorage.getItem('jwtToken');
+          console.log("Token recibido:", token);  // Verifica que el token está siendo recibido
+
+          // Decodificar el token para verificar el rol del usuario
+          if (token) {
+            const decodedToken = decodeJWT(token);  // Usamos la función de decodificación manual
+            setIsLoading(false);
+
+            if (decodedToken) {
+              // Redirigir según el rol del usuario
+              if (decodedToken.role === 'admin') {
+                navigation.navigate('Admin'); // Redirigir a la pantalla de administrador
+              } else {
+                navigation.navigate('DrawerNavigator'); // Redirigir al DrawerNavigator en lugar de Home
+              }
+            } else {
+              console.error("No se pudo decodificar el token");
+            }
+          } else {
+            console.error("No se encontró el token");
+          }
+        } else {
+          setIsLoading(false);
+          Alert.alert('Error', 'Credenciales incorrectas');
+        }
+      } catch (error) {
+        setIsLoading(false);
+        console.error('Error al iniciar sesión', error);
+        Alert.alert('Error', 'No se pudo iniciar sesión');
+      }
     } else {
       if (email === "") setEmailError(true);
       if (password === "") setPasswordError(true);
@@ -297,46 +261,6 @@ export default function Login({ navigation }: LoginProps) {
     setPasswordVisible(!passwordVisible);
   };
 
-  const shakeStyle = (shakeAnim: Animated.Value) => ({
-    transform: [{ translateX: shakeAnim }],
-  });
-
-  const switchToLogin = () => {
-    setIsLogin(true);
-    Animated.timing(sliderAnimation, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const switchToSignUp = () => {
-    setIsLogin(false);
-    Animated.timing(sliderAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const sliderPosition = sliderAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '50%'],
-  });
-
-  const SocialButtonComponent = () => (
-    <>
-      <SocialButton>
-        <Image source={googleIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
-        <Text style={{ fontSize: 14 }}>Continue with Google</Text>
-      </SocialButton>
-      <SocialButton>
-        <Image source={facebookIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
-        <Text style={{ fontSize: 14 }}>Continue with Facebook</Text>
-      </SocialButton>
-    </>
-  );
-
   return (
     <ImageBackground source={background} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <CurvedContainer>
@@ -344,66 +268,57 @@ export default function Login({ navigation }: LoginProps) {
       </CurvedContainer>
       <Card>
         <ButtonOptionContainer>
-          <AnimatedSlider style={{ left: sliderPosition }} />
+          <AnimatedSlider style={{ left: sliderAnimation }} />
 
-          <ButtonOption onPress={switchToLogin}>
+          <ButtonOption onPress={() => setIsLogin(true)}>
             <Text style={{ color: isLogin ? "#fff" : "#000", fontWeight: "bold" }}>Log in</Text>
           </ButtonOption>
 
-          <ButtonOption onPress={switchToSignUp}>
+          <ButtonOption onPress={() => setIsLogin(false)}>
             <Text style={{ color: !isLogin ? "#fff" : "#000", fontWeight: "bold" }}>Sign Up</Text>
           </ButtonOption>
         </ButtonOptionContainer>
 
         {isLogin ? (
           <>
-            <SocialButtonComponent />
-            <InputContainer style={[emailError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(emailShake)]}>
+            <SocialButton>
+              <Image source={googleIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
+              <Text style={{ fontSize: 14 }}>Continue with Google</Text>
+            </SocialButton>
+            <SocialButton>
+              <Image source={facebookIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
+              <Text style={{ fontSize: 14 }}>Continue with Facebook</Text>
+            </SocialButton>
+            <InputContainer style={emailError && { borderColor: 'red', borderWidth: 1.5 }}>
               <Icon name="mail-outline" size={24} color="#888" />
               <StyledInput
                 placeholder="Enter email or username"
                 autoCapitalize="none"
                 keyboardType="email-address"
-                textContentType="emailAddress"
-                autoFocus={true}
                 value={email}
-                onChangeText={(text: string) => setEmail(text)}
+                onChangeText={setEmail}
               />
             </InputContainer>
-            {emailError && <Text style={{ color: 'red', bottom: 15, marginLeft: 10 }}>Invalid email or username</Text>}
-            <InputContainer style={[passwordError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(passwordShake)]}>
+            <InputContainer style={passwordError && { borderColor: 'red', borderWidth: 1.5 }}>
               <Icon name="lock-closed-outline" size={24} color="#888" />
               <StyledInput
                 placeholder="Enter password"
                 autoCapitalize="none"
-                autoCorrect={false}
                 secureTextEntry={!passwordVisible}
-                textContentType="password"
                 value={password}
-                onChangeText={(text: string) => setPassword(text)}
+                onChangeText={setPassword}
               />
               <TouchableOpacity onPress={togglePasswordVisibility}>
-                <Ionicons
-                  name={passwordVisible ? "eye-outline" : "eye-off-outline"}
-                  size={24}
-                  color="#888"
-                  style={{ paddingHorizontal: 10 }}
-                />
+                <Ionicons name={passwordVisible ? "eye-outline" : "eye-off-outline"} size={24} color="#888" />
               </TouchableOpacity>
             </InputContainer>
-            {passwordError && <Text style={{ color: 'red', bottom: 15, marginLeft: 10 }}>Invalid password</Text>}
             <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
               <ForgotPasswordText>Forgot Password?</ForgotPasswordText>
             </TouchableOpacity>
             <ButtonContainer>
-              <RoundedButton 
-                onPress={onHandleLogin} 
-                style={[styles.animatedButton, { width: buttonWidth, height: buttonHeight, borderRadius }]}
-              >
+              <RoundedButton onPress={handleLogin}>
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#FFF" />
-                ) : loginSuccess ? (
-                  <Ionicons name="checkmark" size={30} color="white" />
                 ) : (
                   <RoundedButtonText>Log in</RoundedButtonText>
                 )}
@@ -416,7 +331,7 @@ export default function Login({ navigation }: LoginProps) {
 
         <Footer>
           <FooterText>{isLogin ? "Don't have an account? " : "Already have an account? "}</FooterText>
-          <TouchableOpacity onPress={isLogin ? switchToSignUp : switchToLogin}>
+          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
             <SignUpText>{isLogin ? "Sign Up" : "Log in"}</SignUpText>
           </TouchableOpacity>
         </Footer>

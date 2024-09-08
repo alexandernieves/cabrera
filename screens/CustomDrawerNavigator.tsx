@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, Switch } from 'react-native';
+import { Switch, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native'; 
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';  // Asegúrate de importar el tipo RootStackParamList
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { FontAwesome, MaterialIcons, Entypo } from '@expo/vector-icons';
 import styled from 'styled-components/native';
-import Home from '../Home'; // Asegúrate de que la ruta sea correcta
-import colors from '../../colors';
+import Home from './Home'; 
+import colors from '../colors';
 
 const Drawer = createDrawerNavigator();
+type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const navigation = useNavigation<AdminScreenNavigationProp>();
+
+
+
 
   return (
     <DrawerContentScrollView {...props}>
@@ -35,14 +43,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
             <FontAwesome name="users" size={24} color={colors.primary} />
           </IconContainer>
           <DrawerLabel>Invite Friends</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
-
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Home")}>
-          <IconContainer>
-            <FontAwesome name="qrcode" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Share QR</DrawerLabel>
           <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
         </DrawerItemStyled>
       </DrawerItemContainer>
@@ -77,17 +77,9 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           <DrawerLabel>Settings</DrawerLabel>
           <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
         </DrawerItemStyled>
-
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Home")}>
-          <IconContainer>
-            <FontAwesome name="lock" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Privacy Policy</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
       </DrawerItemContainer>
 
-      <LogoutButton onPress={() => props.navigation.navigate("Login")}>
+      <LogoutButton onPress={() => navigation.navigate('Login')}>
         <FontAwesome name="sign-out" size={24} color="#fff" />
         <LogoutButtonText>Log Out</LogoutButtonText>
       </LogoutButton>
@@ -101,7 +93,6 @@ export function CustomDrawerNavigator() {
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Profile" component={Home} />
       <Drawer.Screen name="Settings" component={Home} />
-      {/* Agrega más pantallas al drawer según sea necesario */}
     </Drawer.Navigator>
   );
 }
@@ -187,4 +178,3 @@ const LogoutButtonText = styled.Text`
   font-size: 16px;
   margin-left: 10px;
 `;
-

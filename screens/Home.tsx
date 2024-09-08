@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, Alert, TouchableOpacity } from "react-native";
+import { Animated, View } from "react-native";
 import { useNavigation, NavigationProp, DrawerActions } from "@react-navigation/native";
-import { Entypo } from '@expo/vector-icons';
+import { Entypo, FontAwesome } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { RootStackParamList } from "../App";
 import colors from '../colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ReferralForm from './ReferralForm'; // Importamos el componente del formulario de referidos
+import Dashboard from './Dashboard'; // Importamos el componente del dashboard
+import Profile from './Profile'; // Importamos el componente del perfil
 
-const catImageUrl = "https://i.guim.co.uk/img/media/26392d05302e02f7bf4eb143bb84c8097d09144b/446_167_3683_2210/master/3683.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=49ed3252c0b2ffb49cf8b508892e452d";
+// Importamos el logo cabrera
+const logoCabrera = require("../assets/cabrera.png");
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [username, setUsername] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'referralForm', 'profile'
+  const [fadeAnim] = useState(new Animated.Value(1)); // Valor de animación de opacidad
 
   useEffect(() => {
     const fetchUsername = async () => {
       const storedUsername = await AsyncStorage.getItem('username');
       if (storedUsername) {
-        setUsername(storedUsername);
-      } else {
-        Alert.alert("Error", "No username found");
+        // Hacer algo con el username
       }
     };
 
@@ -32,24 +35,60 @@ const Home: React.FC = () => {
         </MenuButton>
       ),
       headerRight: () => (
-        <Image
-          source={{ uri: catImageUrl }}
-          style={{
-            width: 40,
-            height: 40,
-            marginRight: 15,
-          }}
-        />
+        <QRCodeButton onPress={() => console.log("QR Code pressed")}>
+          <FontAwesome name="qrcode" size={30} color={colors.primary} />
+        </QRCodeButton>
+      ),
+      headerTitle: () => (
+        <Logo source={logoCabrera} resizeMode="contain" />
       ),
     });
   }, [navigation]);
 
+  const toggleView = (view: string) => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setActiveView(view); // Cambia a la vista correspondiente
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   return (
     <Container>
-      <WelcomeText>Hello, {username}</WelcomeText>
-      <ChatButton onPress={() => navigation.navigate("Chat")}>
-        <Entypo name="chat" size={24} color={colors.lightGray} />
-      </ChatButton>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        {activeView === 'dashboard' && <Dashboard />}
+        {activeView === 'referralForm' && <ReferralForm />}
+        {activeView === 'profile' && <Profile />}
+      </Animated.View>
+
+      {/* Menú de navegación inferior */}
+      <BottomNavigation>
+        <NavItem active={activeView === 'dashboard'} onPress={() => toggleView('dashboard')}>
+          <NavItemContent>
+            <FontAwesome name="home" size={18} color={activeView === 'dashboard' ? "#FFF" : colors.primary} />
+            {activeView === 'dashboard' && <NavItemText active={true}>Home</NavItemText>}
+          </NavItemContent>
+        </NavItem>
+        <NavItem active={activeView === 'referralForm'} onPress={() => toggleView('referralForm')}>
+          <NavItemContent>
+            <FontAwesome name="plus" size={18} color={activeView === 'referralForm' ? "#FFF" : colors.primary} />
+            {activeView === 'referralForm' && <NavItemText active={true}>Add Refer</NavItemText>}
+          </NavItemContent>
+        </NavItem>
+        <NavItem active={activeView === 'profile'} onPress={() => toggleView('profile')}>
+          <NavItemContent>
+            <FontAwesome name="user" size={18} color={activeView === 'profile' ? "#FFF" : colors.primary} />
+            {activeView === 'profile' && <NavItemText active={true}>Profile</NavItemText>}
+          </NavItemContent>
+        </NavItem>
+      </BottomNavigation>
     </Container>
   );
 };
@@ -59,37 +98,59 @@ export default Home;
 // Estilos personalizados
 const Container = styled.View`
   flex: 1;
-  justify-content: center;
-  align-items: center;
   background-color: #fff;
 `;
 
-const WelcomeText = styled.Text`
-  font-size: 24px;
-  color: ${colors.primary};
-  margin-bottom: 20px;
+const Logo = styled.Image`
+  width: 150px;
+  height: 40px;
 `;
 
-const ChatButton = styled.TouchableOpacity`
-  background-color: ${colors.primary};
-  height: 50px;
-  width: 50px;
-  border-radius: 25px;
-  align-items: center;
-  justify-content: center;
-  shadow-color: ${colors.primary};
-  shadow-offset: {
-    width: 0px;
-    height: 2px;
-  };
-  shadow-opacity: 0.9;
-  shadow-radius: 8px;
-  margin-right: 20px;
-  margin-bottom: 50px;
-`;
-
-const MenuButton = styled(TouchableOpacity)`
+const MenuButton = styled.TouchableOpacity`
   padding-left: 20px;
+`;
+
+const QRCodeButton = styled.TouchableOpacity`
   padding-right: 20px;
 `;
 
+const BottomNavigation = styled.View`
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px;
+  background-color: #E0E0E0;
+  border-top-width: 1px;
+  border-top-color: #ccc;
+  position: absolute;
+  bottom: 20px;
+  margin: 0 20px;
+  border-radius: 30px;
+  height: 60px;
+  width: 90%;
+`;
+
+const NavItem = styled.TouchableOpacity<{ active?: boolean }>`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  background-color: ${(props: { active: any; }) => (props.active ? "#002368" : "transparent")};
+  border-radius: 30px;
+  transition: background-color 0.3s ease-in-out;
+`;
+
+const NavItemContent = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+`;
+
+const NavItemText = styled.Text<{ active?: boolean }>`
+  font-size: 12px;
+  color: ${(props: { active: any; }) => (props.active ? "#FFF" : colors.primary)};
+  font-weight: bold;
+  margin-left: 8px;
+  transition: opacity 0.3s ease-in-out;
+  opacity: ${(props: { active: any; }) => (props.active ? 1 : 0)};
+`;
