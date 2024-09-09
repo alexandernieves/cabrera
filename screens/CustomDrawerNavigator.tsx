@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Switch, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native'; 
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -8,24 +8,86 @@ import { FontAwesome, MaterialIcons, Entypo } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import Home from './Home'; 
 import colors from '../colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Drawer = createDrawerNavigator();
-type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Admin'>;
+
+// Definir el tipo de token decodificado
+interface DecodedToken {
+  id: number;
+  email: string;
+  name?: string;
+  role: string;
+  exp: number;
+  iat: number;
+}
+
+// Función para decodificar JWT con JavaScript nativo
+function decodeJWT(token: string): DecodedToken | null {
+  try {
+    const base64Url = token.split('.')[1]; 
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); 
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decodificando el JWT", error);
+    return null;
+  }
+}
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const navigation = useNavigation<AdminScreenNavigationProp>();
 
+  // Estados para almacenar el nombre de usuario y el correo
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
 
+  // Obtener el token de AsyncStorage y decodificarlo
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('jwtToken');
+        if (token) {
+          const decoded = decodeJWT(token); // Usar la función nativa para decodificar el token
+          
+          // Asignar el nombre y el correo electrónico del token decodificado
+          setUsername(decoded?.name || 'User');  // Usar "User" si no hay nombre
+          setEmail(decoded?.email || '');        // Email debe estar siempre en el token
+        }
+      } catch (error) {
+        console.log('Error al obtener el token:', error);
+      }
+    };
 
+    getUserData();
+  }, [props]); // Ejecutar el efecto cada vez que cambien las props para asegurarse de obtener nuevos datos
+
+  // Función para manejar el logout
+  const handleLogout = async () => {
+    try {
+      // Eliminar el token de AsyncStorage al hacer logout
+      await AsyncStorage.removeItem('jwtToken');
+      
+      // Redirigir al login
+      navigation.navigate('Login');
+    } catch (error) {
+      console.log('Error al hacer logout:', error);
+    }
+  };
 
   return (
     <DrawerContentScrollView {...props}>
       <DrawerHeader>
         <ProfileImage source={{ uri: 'https://example.com/user_profile_image.png' }} />
         <UserInfo>
-          <UsernameText>Hi, Alex Storm</UsernameText>
-          <EmailText>alexstorm@email.com</EmailText>
+          {/* Mostrar el nombre y el correo real del usuario */}
+          <UsernameText>Hi, {username}</UsernameText>
+          <EmailText>{email}</EmailText>
         </UserInfo>
       </DrawerHeader>
 
@@ -79,7 +141,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         </DrawerItemStyled>
       </DrawerItemContainer>
 
-      <LogoutButton onPress={() => navigation.navigate('Login')}>
+      <LogoutButton onPress={handleLogout}>
         <FontAwesome name="sign-out" size={24} color="#fff" />
         <LogoutButtonText>Log Out</LogoutButtonText>
       </LogoutButton>

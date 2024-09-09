@@ -15,6 +15,31 @@ import { RootStackParamList } from '../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios'; // Para manejar las peticiones al servidor
 
+// Definir el tipo DecodedToken (puedes ajustar este tipo según el contenido de tu JWT)
+type DecodedToken = {
+  sub: string;
+  email: string;
+  iat: number;
+  exp: number;
+  // Otros campos según tu JWT
+} | null;
+
+// Función para decodificar JWT con JavaScript nativo
+function decodeJWT(token: string): DecodedToken {
+  try {
+    const base64Url = token.split('.')[1]; 
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); 
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decodificando el JWT", error);
+    return null;
+  }
+}
+
 const InputContainer = styled(Animated.View)`
   flex-direction: row;
   align-items: center;
@@ -73,7 +98,6 @@ const TermsText = styled.Text`
 const LinkText = styled.Text`
   color: #E91E63;
   font-size: 14px;
-  text-decoration: underline;
   margin-left: 5px;
 `;
 
@@ -190,21 +214,24 @@ export default function Signup() {
         name,
         email,
         password
-      });
+      });      
 
-      if (response.data.message === 'Usuario registrado exitosamente') {
+      console.log("Respuesta del servidor:", response.data); // Imprime la respuesta completa del servidor
+
+      if (response.data.token) {
+        const decodedToken = decodeJWT(response.data.token);
+        console.log("Token decodificado: ", decodedToken); // Muestra el token decodificado en consola
+
         await AsyncStorage.setItem('username', name);
         setIsLoading(false);
-        Alert.alert("Registro exitoso", "El usuario ha sido registrado correctamente");
-        navigation.replace('Login'); // Redirige al login después del registro
+        navigation.replace('DrawerNavigator'); // Redirige a la pantalla Home
       } else {
         setIsLoading(false);
-        Alert.alert("Error", "No se pudo registrar el usuario");
+        console.log("Error: No se pudo registrar el usuario");
       }
     } catch (error) {
       setIsLoading(false);
       console.error("Signup error", error);
-      Alert.alert("Signup error", "No se pudo registrar el usuario");
     }
   };
 

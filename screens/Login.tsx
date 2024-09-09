@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
   Text, 
   Image, 
@@ -7,9 +7,9 @@ import {
   Animated, 
   StatusBar,
   ImageBackground,
-  StyleSheet,
   ActivityIndicator,
-  Alert
+  View,
+  Vibration
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -17,11 +17,10 @@ import styled from 'styled-components/native';
 import { StackNavigationProp } from '@react-navigation/stack'; 
 import { RootStackParamList } from '../App'; 
 import Signup from "./Signup";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';  
 import axios from 'axios';
 
 const googleIcon = require("../assets/google.png");
-const facebookIcon = require("../assets/facebook.png");
 const background = require("../assets/volante_ford.jpg");
 
 interface DecodedToken {
@@ -54,7 +53,7 @@ const Logo = styled.Image`
 `;
 
 const Card = styled.View`
-  width: 80%;
+  width: 90%; 
   background-color: white;
   border-radius: 20px;
   padding: 20px;
@@ -113,11 +112,13 @@ const InputContainer = styled(Animated.View)`
   margin-bottom: 20px;
   border-radius: 10px;
   padding-horizontal: 12px;
+  width: 100%;
 `;
 
 const StyledInput = styled(TextInput)`
   flex: 1;
   font-size: 16px;
+  padding-left: 10px;
 `;
 
 const Icon = styled(Ionicons)`
@@ -173,21 +174,48 @@ const ForgotPasswordText = styled.Text`
   align-self: flex-end;
 `;
 
-// Función para decodificar JWT sin dependencias externas
+const BackButton = styled.TouchableOpacity`
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  background-color: #002368;
+  border-radius: 50px;
+  padding: 10px;
+  z-index: 10;
+`;
+
+const ErrorText = styled.Text`
+  color: red;
+  align-self: flex-start; 
+  margin-left: 10px;
+  margin-top: -10px;
+  margin-bottom: 5px;
+`;
+
 function decodeJWT(token: string): DecodedToken | null {
   try {
-    const base64Url = token.split('.')[1]; // Extraer la parte del payload
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); // Reemplazar caracteres de URL
+    const base64Url = token.split('.')[1]; 
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); 
     const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 
-    return JSON.parse(jsonPayload); // Convertir el payload a objeto JSON
+    return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error("Error al decodificar el JWT", error);
     return null;
   }
 }
+
+// Función para validar el email
+const validateEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Función para validar la contraseña
+const validatePassword = (password: string) => {
+  return password.length >= 6; // Requerir al menos 6 caracteres
+};
 
 export default function Login({ navigation }: LoginProps) { 
   const [email, setEmail] = useState("");
@@ -198,17 +226,60 @@ export default function Login({ navigation }: LoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
+  const emailShakeAnimation = useRef(new Animated.Value(0)).current;
+  const passwordShakeAnimation = useRef(new Animated.Value(0)).current;
+
   const sliderAnimation = useRef(new Animated.Value(0)).current;
 
-  // Función para manejar el login usando Axios
+  const shakeAnimation = (shakeAnimationRef: Animated.Value) => {
+    Animated.sequence([
+      Animated.timing(shakeAnimationRef, { toValue: 10, duration: 100, useNativeDriver: true }),
+      Animated.timing(shakeAnimationRef, { toValue: -10, duration: 100, useNativeDriver: true }),
+      Animated.timing(shakeAnimationRef, { toValue: 10, duration: 100, useNativeDriver: true }),
+      Animated.timing(shakeAnimationRef, { toValue: 0, duration: 100, useNativeDriver: true })
+    ]).start();
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setEmail(""); 
+      setPassword(""); 
+    }, [])
+  );
+
+  useEffect(() => {
+    Animated.timing(sliderAnimation, {
+      toValue: isLogin ? 0 : 1, 
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [isLogin]);
+
+  const sliderPosition = sliderAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '50%'],
+  });
+
   const handleLogin = async () => {
     setEmailError(false);
     setPasswordError(false);
 
-    if (email !== "" && password !== "") {
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid) {
+      setEmailError(true);
+      shakeAnimation(emailShakeAnimation);
+    }
+
+    if (!isPasswordValid) {
+      setPasswordError(true);
+      shakeAnimation(passwordShakeAnimation);
+    }
+
+    if (isEmailValid && isPasswordValid) {
       setIsLoading(true);
       try {
-        // Realizar petición con Axios
         const response = await axios.post('http://localhost:3000/login', {
           email,
           password
@@ -217,43 +288,40 @@ export default function Login({ navigation }: LoginProps) {
         const data = response.data;
 
         if (data.token) {
-          // Almacenar el token en AsyncStorage
           await AsyncStorage.setItem('jwtToken', data.token);
-
-          // Obtener y verificar el token
           const token = await AsyncStorage.getItem('jwtToken');
-          console.log("Token recibido:", token);  // Verifica que el token está siendo recibido
-
-          // Decodificar el token para verificar el rol del usuario
           if (token) {
-            const decodedToken = decodeJWT(token);  // Usamos la función de decodificación manual
+            const decodedToken = decodeJWT(token);  
             setIsLoading(false);
 
             if (decodedToken) {
-              // Redirigir según el rol del usuario
               if (decodedToken.role === 'admin') {
-                navigation.navigate('Admin'); // Redirigir a la pantalla de administrador
+                navigation.navigate('Admin');
               } else {
-                navigation.navigate('DrawerNavigator'); // Redirigir al DrawerNavigator en lugar de Home
+                navigation.navigate('DrawerNavigator');
               }
-            } else {
-              console.error("No se pudo decodificar el token");
             }
-          } else {
-            console.error("No se encontró el token");
           }
         } else {
           setIsLoading(false);
-          Alert.alert('Error', 'Credenciales incorrectas');
+          setEmailError(true);
+          setPasswordError(true);
+          shakeAnimation(emailShakeAnimation);
+          shakeAnimation(passwordShakeAnimation);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         setIsLoading(false);
-        console.error('Error al iniciar sesión', error);
-        Alert.alert('Error', 'No se pudo iniciar sesión');
+        if (axios.isAxiosError(error)) {
+          if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            // Error de red, manejado silenciosamente
+          } else if (error.response?.status === 401) {
+            setEmailError(true);
+            setPasswordError(true);
+            shakeAnimation(emailShakeAnimation);
+            shakeAnimation(passwordShakeAnimation);
+          }
+        }
       }
-    } else {
-      if (email === "") setEmailError(true);
-      if (password === "") setPasswordError(true);
     }
   };
 
@@ -266,9 +334,14 @@ export default function Login({ navigation }: LoginProps) {
       <CurvedContainer>
         <Logo source={require('../assets/cabrera.png')} />
       </CurvedContainer>
+      
+      <BackButton onPress={() => navigation.navigate('Welcome')}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </BackButton>
+
       <Card>
         <ButtonOptionContainer>
-          <AnimatedSlider style={{ left: sliderAnimation }} />
+          <AnimatedSlider style={{ left: sliderPosition }} />
 
           <ButtonOption onPress={() => setIsLogin(true)}>
             <Text style={{ color: isLogin ? "#fff" : "#000", fontWeight: "bold" }}>Log in</Text>
@@ -285,33 +358,38 @@ export default function Login({ navigation }: LoginProps) {
               <Image source={googleIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
               <Text style={{ fontSize: 14 }}>Continue with Google</Text>
             </SocialButton>
-            <SocialButton>
-              <Image source={facebookIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
-              <Text style={{ fontSize: 14 }}>Continue with Facebook</Text>
-            </SocialButton>
-            <InputContainer style={emailError && { borderColor: 'red', borderWidth: 1.5 }}>
-              <Icon name="mail-outline" size={24} color="#888" />
-              <StyledInput
-                placeholder="Enter email or username"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </InputContainer>
-            <InputContainer style={passwordError && { borderColor: 'red', borderWidth: 1.5 }}>
-              <Icon name="lock-closed-outline" size={24} color="#888" />
-              <StyledInput
-                placeholder="Enter password"
-                autoCapitalize="none"
-                secureTextEntry={!passwordVisible}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity onPress={togglePasswordVisibility}>
-                <Ionicons name={passwordVisible ? "eye-outline" : "eye-off-outline"} size={24} color="#888" />
-              </TouchableOpacity>
-            </InputContainer>
+
+            <Animated.View style={{ transform: [{ translateX: emailShakeAnimation }] }}>
+              <InputContainer style={emailError && { borderColor: 'red', borderWidth: 1.5 }}>
+                <Icon name="mail-outline" size={24} color="#888" />
+                <StyledInput
+                  placeholder="Enter email or username"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </InputContainer>
+              {emailError && <ErrorText>Email invalid</ErrorText>}
+            </Animated.View>
+
+            <Animated.View style={{ transform: [{ translateX: passwordShakeAnimation }] }}>
+              <InputContainer style={passwordError && { borderColor: 'red', borderWidth: 1.5 }}>
+                <Icon name="lock-closed-outline" size={24} color="#888" />
+                <StyledInput
+                  placeholder="Enter password"
+                  autoCapitalize="none"
+                  secureTextEntry={!passwordVisible}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={togglePasswordVisibility}>
+                  <Ionicons name={passwordVisible ? "eye-outline" : "eye-off-outline"} size={24} color="#888" />
+                </TouchableOpacity>
+              </InputContainer>
+              {passwordError && <ErrorText>Password invalid</ErrorText>}
+            </Animated.View>
+
             <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
               <ForgotPasswordText>Forgot Password?</ForgotPasswordText>
             </TouchableOpacity>
@@ -340,10 +418,3 @@ export default function Login({ navigation }: LoginProps) {
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  animatedButton: {
-    justifyContent: "center",
-    alignItems: "center",
-  }
-});

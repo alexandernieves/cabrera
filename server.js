@@ -12,16 +12,14 @@ app.use(express.json());
 
 // Configuración de conexión a MySQL
 const pool = mysql.createPool({
-    host: 'localhost',    // Cambia a 'localhost' si '127.0.0.1' no funciona
+    host: '127.0.0.1',    // Cambia a 'localhost' si '127.0.0.1' no funciona
     user: 'root',
     password: '',
     database: 'user_management',
     port: 3308,
-  });
-  
-  
-  
-  pool.getConnection()
+});
+
+pool.getConnection()
   .then(connection => {
     console.log('Conexión exitosa a la base de datos');
     connection.release();  // Liberar la conexión de vuelta al pool
@@ -30,30 +28,49 @@ const pool = mysql.createPool({
     console.error('Error de conexión a la base de datos:', err);
   });
 
-  
 // Clave secreta para firmar los tokens JWT
-const secretKey = process.env.JWT_SECRET;
+const secretKey = process.env.JWT_SECRET || '827d89c49894a0817ba2a74963ae486db9b5329b557eaa123e78731e718754ddc0fdd2034f1f45eef948aaff1b548631c9809d23668d56105c74181bd301411d';
 
 // Ruta para registrar usuarios nuevos
+// Ruta para registrar usuarios nuevos y almacenar el token en la tabla 'users'
 app.post('/signup', async (req, res) => {
-  const { email, password, role } = req.body;
+  const { name, email, password, role } = req.body;  // Añadir name aquí
 
-  // Validar que el correo no exista ya en la base de datos
-  const [existingUser] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+  try {
+    // Validar que el correo no exista ya en la base de datos
+    const [existingUser] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
 
-  if (existingUser.length > 0) {
-    return res.status(400).json({ message: 'Este email ya está registrado' });
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'Este email ya está registrado' });
+    }
+
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insertar el nuevo usuario en la base de datos, incluyendo el campo 'name'
+    const [result] = await pool.query('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', [name, email, hashedPassword, role || 'user']);
+
+    // Generar el token JWT para el usuario registrado
+    const token = jwt.sign({ id: result.insertId, email: email, role: role || 'user' }, secretKey, { expiresIn: '1h' });
+
+    // Almacenar el token en la tabla 'users' en la columna 'token'
+    await pool.query('UPDATE users SET token = ? WHERE id = ?', [token, result.insertId]);
+
+    // Devolver el mensaje de éxito junto con el token
+    res.status(201).json({
+      message: 'Usuario registrado exitosamente',
+      token: token
+    });
+  } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    res.status(500).json({ message: 'Error al registrar el usuario' });
   }
-
-  // Hashear la contraseña
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Insertar el nuevo usuario en la base de datos
-  await pool.query('INSERT INTO users (email, password, role) VALUES (?, ?, ?)', [email, hashedPassword, role || 'user']);
-
-  res.status(201).json({ message: 'Usuario registrado exitosamente' });
 });
 
+
+
+
+// Ruta de login
 // Ruta de login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -73,13 +90,20 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Email o contraseña incorrectos' });
     }
 
+    // Imprimir el token almacenado en la base de datos
+    console.log('Token almacenado en la base de datos:', user.token);
+
     // Generar el token JWT con el rol del usuario
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, secretKey, { expiresIn: '1h' });
-    res.json({ token });
+    const newToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, secretKey, { expiresIn: '1h' });
+
+    // Devolver el nuevo token
+    res.json({ token: newToken });
   } catch (error) {
+    console.error('Error al iniciar sesión:', error);
     res.status(500).json({ message: 'Error al iniciar sesión' });
   }
 });
+
 
 // Ruta protegida general (accesible para todos los usuarios autenticados)
 app.get('/protected', (req, res) => {
