@@ -2,11 +2,15 @@ import 'dotenv/config';
 
 export default {
   "expo": {
-    "name": "ChatApp",
-    "slug": "ChatApp",
+    "name": "cabrera",
+    "slug": "cabrera",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.alexcode.org.cabrera"
+    },
+
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -32,6 +36,10 @@ export default {
       "favicon": "./assets/favicon.png"
     },
     extra: {
+      "eas": {
+        "projectId": "bb57d240-0c7a-406e-b804-e6b2d68d1953"
+      }
+,
       apiKey: process.env.API_KEY,
       authDomain: process.env.AUTH_DOMAIN,
       projectId: process.env.PROJECT_ID,
