@@ -292,20 +292,20 @@ export default function Login({ navigation }: LoginProps) {
   const handleLogin = async () => {
     setEmailError(false);
     setPasswordError(false);
-
+  
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
-
+  
     if (!isEmailValid) {
       setEmailError(true);
       shakeAnimation(emailShakeAnimation);
     }
-
+  
     if (!isPasswordValid) {
       setPasswordError(true);
       shakeAnimation(passwordShakeAnimation);
     }
-
+  
     if (isEmailValid && isPasswordValid) {
       setIsLoading(true);
       try {
@@ -315,22 +315,19 @@ export default function Login({ navigation }: LoginProps) {
         }, {
           timeout: 5000  // Tiempo máximo de espera de la petición (5 segundos)
         });
-
+  
         const data = response.data;
-
+  
         if (data.token) {
           await AsyncStorage.setItem('jwtToken', data.token);
           const token = await AsyncStorage.getItem('jwtToken');
           if (token) {
             const decodedToken = decodeJWT(token);  
             setIsLoading(false);
-
+  
             if (decodedToken) {
-              if (decodedToken.role === 'admin') {
-                navigation.navigate('Admin');
-              } else {
-                navigation.navigate('DrawerNavigator');
-              }
+              const nextScreen = decodedToken.role === 'admin' ? 'Admin' : 'DrawerNavigator';
+              navigation.navigate('PreloaderCircle', { nextScreen }); // Redirige a PreloaderCircle con la pantalla siguiente
             }
           }
         } else {
@@ -358,6 +355,7 @@ export default function Login({ navigation }: LoginProps) {
       }
     }
   };
+  
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
