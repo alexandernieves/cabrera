@@ -9,7 +9,8 @@ import Welcome from './screens/Welcome';
 import ForgotPassword from './screens/ViewReset/ForgotPassword';
 import ConfirmCode from './screens/ViewReset/ConfirmCode';
 import Admin from './screens/Admin';
-import Home from './screens/Home'; // Asegúrate de importar correctamente tu componente
+import Referrals from './screens/Referrals'; 
+import Home from './screens/Home'; // Asegúrate de importar correctamente tu componente// Asegúrate de importar correctamente tu componente
 import Chat from './screens/Chat';
 import ImagePreloader from './components/ImagePreloader';
 import NoInternet from './screens/NoInternet';
@@ -24,7 +25,8 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ConfirmCode: undefined;
   Admin: undefined;
-  Home: undefined;
+  Home: undefined;  // Asegúrate de que "Home" esté correctamente definida aquí
+  Referrals: undefined;
   Chat: undefined;
   NoInternet: undefined;
   SuccessAnimation: { nextScreen: string };
@@ -52,6 +54,7 @@ function MainStackNavigator() {
       <Stack.Screen name="DrawerNavigator" component={CustomDrawerNavigator} />
       <Stack.Screen name="Admin" component={Admin} />
       <Stack.Screen name="Home" component={Home} />
+      <Stack.Screen name="Referrals" component={Referrals} />
       <Stack.Screen name="Chat" component={Chat} />
       <Stack.Screen name="SuccessAnimation" component={SuccessAnimation} />
       <Stack.Screen name="PreloaderCircle" component={PreloaderCircle} />

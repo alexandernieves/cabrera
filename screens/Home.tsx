@@ -9,13 +9,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReferralForm from './ReferralForm'; // Importamos el componente del formulario de referidos
 import Dashboard from './Dashboard'; // Importamos el componente del dashboard
 import Profile from './Profile'; // Importamos el componente del perfil
-
+// import Referrals from './Referrals';
 // Importamos el logo cabrera
 const logoCabrera = require("../assets/cabrera.png");
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'referralForm', 'profile'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'referralForm', 'profile', 'referrals'
   const [fadeAnim] = useState(new Animated.Value(1)); // Valor de animación de opacidad
 
   useEffect(() => {
@@ -66,6 +66,7 @@ const Home: React.FC = () => {
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'referralForm' && <ReferralForm />}
         {activeView === 'profile' && <Profile />}
+        {/* {activeView === 'referrals' && <Referrals />} */}
       </Animated.View>
 
       {/* Menú de navegación inferior */}
