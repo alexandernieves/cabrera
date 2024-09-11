@@ -19,9 +19,13 @@ import { RootStackParamList } from '../App';
 import Signup from "./Signup";
 import { useNavigation, useFocusEffect } from '@react-navigation/native';  
 import axios from 'axios';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 
 const googleIcon = require("../assets/google.png");
 const background = require("../assets/volante_ford.jpg");
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface DecodedToken {
   role: string;
@@ -30,6 +34,8 @@ interface DecodedToken {
 interface LoginProps {
   navigation: StackNavigationProp<RootStackParamList, 'Login'>;
 }
+
+// ios 407124330321-ga4e8juvkib5smbjp3dh5pgecorm0f2f.apps.googleusercontent.com
 
 const CurvedContainer = styled.View`
   position: absolute;
@@ -231,6 +237,29 @@ export default function Login({ navigation }: LoginProps) {
 
   const sliderAnimation = useRef(new Animated.Value(0)).current;
 
+  // Google Auth setup
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '407124330321-ga4e8juvkib5smbjp3dh5pgecorm0f2f.apps.googleusercontent.com',
+    scopes: ['profile', 'email'],
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success' && response.authentication) {
+      const { accessToken } = response.authentication;
+      fetchUserInfo(accessToken);
+    }
+  }, [response]);
+  
+
+  const fetchUserInfo = async (token: string) => {
+    let response = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const user = await response.json();
+    await AsyncStorage.setItem('userInfo', JSON.stringify(user));
+    console.log('User Info:', user);
+  };
+
   const shakeAnimation = (shakeAnimationRef: Animated.Value) => {
     Animated.sequence([
       Animated.timing(shakeAnimationRef, { toValue: 10, duration: 100, useNativeDriver: true }),
@@ -283,6 +312,8 @@ export default function Login({ navigation }: LoginProps) {
         const response = await axios.post('http://localhost:3000/login', {
           email,
           password
+        }, {
+          timeout: 5000  // Tiempo máximo de espera de la petición (5 segundos)
         });
 
         const data = response.data;
@@ -314,11 +345,14 @@ export default function Login({ navigation }: LoginProps) {
         if (axios.isAxiosError(error)) {
           if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
             // Error de red, manejado silenciosamente
+            console.log('Error de red: Tiempo de espera excedido');
           } else if (error.response?.status === 401) {
             setEmailError(true);
             setPasswordError(true);
             shakeAnimation(emailShakeAnimation);
             shakeAnimation(passwordShakeAnimation);
+          } else {
+            console.log('Error de red: ', error.message);
           }
         }
       }
@@ -354,7 +388,7 @@ export default function Login({ navigation }: LoginProps) {
 
         {isLogin ? (
           <>
-            <SocialButton>
+            <SocialButton onPress={() => promptAsync()}>
               <Image source={googleIcon} style={{ width: 20, height: 20, marginRight: 5 }} />
               <Text style={{ fontSize: 14 }}>Continue with Google</Text>
             </SocialButton>
