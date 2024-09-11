@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Home: undefined;
   Chat: undefined;
   NoInternet: undefined;
+  SuccessAnimation: { nextScreen: string };
   Success: { nextScreen: string };
   PreloaderCircle: { nextScreen: keyof RootStackParamList };
   DrawerNavigator: undefined;
@@ -52,7 +53,7 @@ function MainStackNavigator() {
       <Stack.Screen name="Admin" component={Admin} />
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="Chat" component={Chat} />
-      <Stack.Screen name="Success" component={SuccessAnimation} />
+      <Stack.Screen name="SuccessAnimation" component={SuccessAnimation} />
       <Stack.Screen name="PreloaderCircle" component={PreloaderCircle} />
     </Stack.Navigator>
   );

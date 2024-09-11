@@ -37,13 +37,12 @@ const SuccessAnimation = ({ navigation }: { navigation: any }) => {
     ]).start();
 
     const timeoutId = setTimeout(() => {
-      navigation.navigate('PreloaderCircle', {
-        nextScreen: route.params?.nextScreen || 'Home',
-      });
+      // Redirigir al DrawerNavigator para que el usuario vea la pantalla principal
+      navigation.replace('DrawerNavigator');
     }, 3000);
 
     return () => clearTimeout(timeoutId);
-  }, [scaleAnim, opacityAnim, secondCircleScaleAnim, thirdCircleScaleAnim, navigation, route.params?.nextScreen]);
+  }, [scaleAnim, opacityAnim, secondCircleScaleAnim, thirdCircleScaleAnim, navigation]);
 
   return (
     <Container>

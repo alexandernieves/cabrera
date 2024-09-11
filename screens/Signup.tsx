@@ -224,7 +224,11 @@ export default function Signup() {
 
         await AsyncStorage.setItem('username', name);
         setIsLoading(false);
-        navigation.replace('DrawerNavigator'); // Redirige a la pantalla Home
+
+        // Redirigir a PreloaderCircle y luego a SuccessAnimation
+        navigation.replace('PreloaderCircle', {
+          nextScreen: 'SuccessAnimation', // Después de la precarga, se mostrará la animación de éxito
+        });
       } else {
         setIsLoading(false);
         console.log("Error: No se pudo registrar el usuario");
