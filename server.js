@@ -12,7 +12,7 @@ app.use(express.json());
 
 // Configuración de conexión a MySQL
 const pool = mysql.createPool({
-    host: '127.0.0.1',    // Cambia a 'localhost' si '127.0.0.1' no funciona
+    host: 'localhost',    // Cambia a 'localhost' si '127.0.0.1' no funciona
     user: 'root',
     password: '',
     database: 'user_management',

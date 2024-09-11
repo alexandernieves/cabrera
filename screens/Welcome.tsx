@@ -96,7 +96,7 @@ export default function Welcome() {
           <ButtonText>Get started</ButtonText>
         </Button>
         <LoginText>
-          Don't have an account? <SignUpText>Sign Up</SignUpText>
+        "Conquer the road with the perfect truck from Cabrera Autos."
         </LoginText>
       </Footer>
     </Container>
