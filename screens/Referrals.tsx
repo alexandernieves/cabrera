@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native';
 import { Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../App'; // Importa tu lista de rutas tipadas
 
-const referralsData = [
-  { name: 'Nayib', status: 'Booked', avatar: require('../assets/1.png') },
-  { name: 'Trump', status: 'Booked', avatar: require('../assets/2.png') },
-  { name: 'Ali', status: 'Pending', avatar: require('../assets/3.png') },
-  { name: 'Brown', status: 'Pending', avatar: require('../assets/4.png') },
-  { name: 'Charles', status: 'Pending', avatar: require('../assets/5.png') },
-  { name: 'Ralf', status: 'Pending', avatar: require('../assets/6.png') },
-  { name: 'Wind', status: 'Closed', avatar: require('../assets/7.png') },
-  { name: 'Milner', status: 'Lost', avatar: require('../assets/8.png') },
-  { name: 'Mr Lee', status: 'Lost', avatar: require('../assets/9.png') },
-  { name: 'Peter', status: 'Booked', avatar: require('../assets/10.png') },
+const avatars = [
+  require('../assets/1.png'),
+  require('../assets/2.png'),
+  require('../assets/3.png'),
+  require('../assets/4.png'),
+  require('../assets/5.png'),
+  require('../assets/6.png'),
+  require('../assets/7.png'),
+  require('../assets/8.png'),
+  require('../assets/9.png'),
+  require('../assets/10.png'),
 ];
 
 // Styled Components
@@ -159,23 +160,53 @@ const statusColors: Record<string, { bgColor: string; textColor: string }> = {
 };
 
 export default function Referrals() {
+  const [referralsData, setReferralsData] = useState<any[]>([]); // Cambia la fuente de datos
   const [selectedFilter, setSelectedFilter] = useState('All Referrals');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Hasta 5 referidos por página
-
-  // Para la animación de paginación
   const paginationAnimation = useRef(new Animated.Value(0)).current;
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
-    // Iniciar la animación cuando cambia la página
+    const fetchReferrals = async () => {
+      try {
+        const token = await AsyncStorage.getItem('jwtToken');
+        if (!token) {
+          Alert.alert('Error', 'No se encontró un token, por favor inicie sesión.');
+          return;
+        }
+        const response = await fetch('http://localhost:3000/user/referrals', {
+          headers: { Authorization: `${token}` }, // Agrega el token de autorización
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Asignar avatares aleatorios a cada referido
+          const referralsWithAvatars = data.referrals.map((referral: any) => ({
+            ...referral,
+            avatar: avatars[Math.floor(Math.random() * avatars.length)], // Asignar avatar aleatorio
+          }));
+          setReferralsData(referralsWithAvatars);
+        } else {
+          const errorData = await response.json();
+          Alert.alert('Error', errorData.message);
+        }
+      } catch (error) {
+        console.error('Error fetching referrals:', error);
+        Alert.alert('Error', 'Failed to fetch referrals');
+      }
+    };
+
+    fetchReferrals();
+  }, []);
+
+  useEffect(() => {
     Animated.timing(paginationAnimation, {
       toValue: currentPage,
       duration: 300,
-      useNativeDriver: false, // Para asegurarse de que la animación de estilo funcione correctamente
+      useNativeDriver: false,
     }).start();
   }, [currentPage]);
-
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const filters = ['All Referrals', 'Booked', 'Pending', 'Closed', 'Lost'];
 
@@ -188,14 +219,8 @@ export default function Referrals() {
     return referral.status === selectedFilter;
   });
 
-  // Función para calcular el total de páginas
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  // Obtener los datos para la página actual
-  const currentData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const currentData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -226,18 +251,19 @@ export default function Referrals() {
           <ReferralCard key={index}>
             <Avatar source={referral.avatar} />
             <ReferralInfo>
-              <ReferralName>{referral.name}</ReferralName>
+              <ReferralName>{referral.first_name} {referral.last_name}</ReferralName>
               <BadgeContainer
-                bgColor={statusColors[referral.status.toLowerCase()].bgColor}
-                textColor={statusColors[referral.status.toLowerCase()].textColor}
-              >
-                <BadgeText
-                  bgColor={statusColors[referral.status.toLowerCase()].bgColor}
-                  textColor={statusColors[referral.status.toLowerCase()].textColor}
-                >
-                  {referral.status}
-                </BadgeText>
-              </BadgeContainer>
+  bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
+  textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
+>
+  <BadgeText
+    bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
+    textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
+  >
+    {referral.status || 'Pending'}
+  </BadgeText>
+</BadgeContainer>
+
             </ReferralInfo>
           </ReferralCard>
         ))}
@@ -249,7 +275,6 @@ export default function Referrals() {
           <Ionicons name="chevron-back-outline" size={24} color={currentPage === 1 ? '#ccc' : '#002368'} />
         </PaginationButton>
 
-        {/* Animación de la paginación */}
         {[...Array(totalPages)].map((_, index) => (
           <PageCircle key={index} isActive={index + 1 === currentPage}>
             <PageNumber isActive={index + 1 === currentPage}>

@@ -104,6 +104,56 @@ app.post('/login', async (req, res) => {
 });
 
 
+// Ruta para obtener los referidos de un usuario autenticado
+app.get('/user/referrals', async (req, res) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Token no proporcionado' });
+  }
+
+  try {
+    // Verificar y decodificar el token JWT
+    const decoded = jwt.verify(token, secretKey);
+    const userId = decoded.id;
+
+    // Consultar los referidos del usuario autenticado
+    const [rows] = await pool.query(
+      'SELECT first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, status FROM referrals WHERE referred_by_user_id = ?', 
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(200).json({ message: 'No referrals found', referrals: [] });
+    }
+
+    res.status(200).json({ referrals: rows });
+  } catch (error) {
+    console.error('Error al obtener los referidos:', error.message);
+    res.status(500).json({ message: 'Error al obtener los referidos' });
+  }
+});
+
+
+app.post('/referrals', async (req, res) => {
+  const { first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status } = req.body;
+
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO referrals (user_id, first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [referred_by_user_id, first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status]
+    );
+
+    res.status(201).json({ message: 'Referral saved successfully', referralId: result.insertId });
+  } catch (error) {
+    console.error('Error saving referral:', error.message);
+    res.status(500).json({ message: `Failed to save referral: ${error.message}` });
+  }
+});
+
+
+
+
 // Ruta protegida general (accesible para todos los usuarios autenticados)
 app.get('/protected', (req, res) => {
   const token = req.headers['authorization'];
@@ -119,6 +169,34 @@ app.get('/protected', (req, res) => {
     res.status(401).json({ message: 'Token inválido' });
   }
 });
+
+// Ruta para contar los referidos de un usuario autenticado
+app.get('/referrals/count', async (req, res) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Token no proporcionado' });
+  }
+
+  try {
+    // Verificar y decodificar el token JWT
+    const decoded = jwt.verify(token, secretKey);
+    const userId = decoded.id;
+
+    // Consultar cuántos referidos tiene el usuario autenticado
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) AS total_referrals FROM referrals WHERE referred_by_user_id = ?', 
+      [userId]
+    );
+
+    const totalReferrals = rows[0].total_referrals;
+    res.status(200).json({ totalReferrals });
+  } catch (error) {
+    console.error('Error al obtener el número de referidos:', error.message);
+    res.status(500).json({ message: 'Error al obtener el número de referidos' });
+  }
+});
+
 
 // Ruta protegida solo para administradores
 app.get('/admin', (req, res) => {
