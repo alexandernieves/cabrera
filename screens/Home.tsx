@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Animated, View } from "react-native";
+import { Animated, View, Text, TouchableOpacity } from "react-native";
 import { useNavigation, NavigationProp, DrawerActions } from "@react-navigation/native";
 import { Entypo, FontAwesome } from '@expo/vector-icons';
 import styled from 'styled-components/native';
@@ -9,8 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReferralForm from './ReferralForm'; // Importamos el componente del formulario de referidos
 import Dashboard from './Dashboard'; // Importamos el componente del dashboard
 import Profile from './Profile'; // Importamos el componente del perfil
-// import Referrals from './Referrals';
-// Importamos el logo cabrera
+import Referrals from './Referrals'; // Comentamos el componente Referrals
+
 const logoCabrera = require("../assets/cabrera.png");
 
 const Home: React.FC = () => {
@@ -62,11 +62,29 @@ const Home: React.FC = () => {
 
   return (
     <Container>
+      {/* Menú de navegación superior para cambiar entre Dashboard y Referrals */}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginVertical: 20 }}>
+        <TouchableOpacity onPress={() => toggleView('dashboard')} style={{ marginHorizontal: 10 }}>
+          <Text style={{ color: activeView === 'dashboard' ? '#002368' : '#ccc', fontSize: 18, fontWeight: 'bold' }}>
+            Dashboard
+          </Text>
+        </TouchableOpacity>
+        
+        {/* Separador debe estar dentro de <Text> */}
+        <Text style={{ color: '#ccc', fontSize: 18, fontWeight: 'bold' }}> | </Text> 
+
+        <TouchableOpacity onPress={() => toggleView('referrals')} style={{ marginHorizontal: 10 }}>
+          <Text style={{ color: activeView === 'referrals' ? '#002368' : '#ccc', fontSize: 18, fontWeight: 'bold' }}>
+            Referrals
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'referralForm' && <ReferralForm />}
         {activeView === 'profile' && <Profile />}
-        {/* {activeView === 'referrals' && <Referrals />} */}
+        {activeView === 'referrals' && <Referrals />} 
       </Animated.View>
 
       {/* Menú de navegación inferior */}
@@ -74,19 +92,31 @@ const Home: React.FC = () => {
         <NavItem active={activeView === 'dashboard'} onPress={() => toggleView('dashboard')}>
           <NavItemContent>
             <FontAwesome name="home" size={18} color={activeView === 'dashboard' ? "#FFF" : colors.primary} />
-            {activeView === 'dashboard' && <NavItemText active={true}>Home</NavItemText>}
+            {activeView === 'dashboard' && (
+              <NavItemText active={true}>
+                Home
+              </NavItemText>
+            )}
           </NavItemContent>
         </NavItem>
         <NavItem active={activeView === 'referralForm'} onPress={() => toggleView('referralForm')}>
           <NavItemContent>
             <FontAwesome name="plus" size={18} color={activeView === 'referralForm' ? "#FFF" : colors.primary} />
-            {activeView === 'referralForm' && <NavItemText active={true}>Add Refer</NavItemText>}
+            {activeView === 'referralForm' && (
+              <NavItemText active={true}>
+                Add Refer
+              </NavItemText>
+            )}
           </NavItemContent>
         </NavItem>
         <NavItem active={activeView === 'profile'} onPress={() => toggleView('profile')}>
           <NavItemContent>
             <FontAwesome name="user" size={18} color={activeView === 'profile' ? "#FFF" : colors.primary} />
-            {activeView === 'profile' && <NavItemText active={true}>Profile</NavItemText>}
+            {activeView === 'profile' && (
+              <NavItemText active={true}>
+                Profile
+              </NavItemText>
+            )}
           </NavItemContent>
         </NavItem>
       </BottomNavigation>

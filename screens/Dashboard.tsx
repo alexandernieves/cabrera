@@ -8,12 +8,6 @@ import colors from '../colors';
 const Dashboard: React.FC = () => {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-      <DashboardTitleContainer>
-        <DashboardTitle active={true}>Dashboard</DashboardTitle>
-        <Separator>|</Separator>
-        <ReferralsTitle>Referrals</ReferralsTitle>
-      </DashboardTitleContainer>
-
       <ReferralContainer>
         <ReferralBoxLarge>
           <BoxTitle>Total Referrals</BoxTitle>

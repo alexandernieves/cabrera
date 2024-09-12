@@ -71,7 +71,6 @@ app.post('/signup', async (req, res) => {
 
 
 // Ruta de login
-// Ruta de login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
