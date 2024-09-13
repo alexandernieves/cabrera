@@ -171,7 +171,7 @@ export default function Referrals() {
   const [referralsData, setReferralsData] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState('All Referrals');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Hasta 5 referidos por página
+  const itemsPerPage = 7; // Hasta 5 referidos por página
   const paginationAnimation = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 

@@ -11,30 +11,32 @@ import ConfirmCode from './screens/ViewReset/ConfirmCode';
 import Admin from './screens/Admin';
 import Referrals from './screens/Referrals';
 import ReferralForm from './screens/ReferralForm';
-import Home from './screens/Home'; // Asegúrate de importar correctamente tu componente// Asegúrate de importar correctamente tu componente
+import Home from './screens/Home';
 import Chat from './screens/Chat';
+import QRScreen from './screens/QRScreen';
 import ImagePreloader from './components/ImagePreloader';
 import NoInternet from './screens/NoInternet';
 import SuccessAnimation from './components/SuccessAnimation';
 import PreloaderCircle from './components/PreloaderCircle';
-import { CustomDrawerNavigator } from './screens/CustomDrawerNavigator';  // Asegúrate que este sea un componente
+import { CustomDrawerNavigator } from './screens/CustomDrawerNavigator';  // Asegúrate de importar el componente correctamente
 
 export type RootStackParamList = {
-  Welcome: undefined; 
+  Welcome: undefined;
   Login: undefined;
   Signup: undefined;
   ForgotPassword: undefined;
   ConfirmCode: undefined;
   Admin: undefined;
-  Home: undefined;  // Asegúrate de que "Home" esté correctamente definida aquí
+  Home: undefined;
   Referrals: undefined;
   Chat: undefined;
   NoInternet: undefined;
   ReferralForm: undefined;
   Success: { nextScreen: string };
+  QRScreen: undefined;  // <--- Añade esto si no está presente
   PreloaderCircle: { nextScreen: keyof RootStackParamList };
   SuccessAnimation: { nextScreen: keyof RootStackParamList };
-  DrawerNavigator: undefined;
+  DrawerNavigator: undefined; // Asegúrate de que DrawerNavigator esté definido
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -59,6 +61,7 @@ function MainStackNavigator() {
       <Stack.Screen name="Referrals" component={Referrals} />
       <Stack.Screen name="ReferralForm" component={ReferralForm} />
       <Stack.Screen name="Chat" component={Chat} />
+      <Stack.Screen name="QRScreen" component={QRScreen} />
       <Stack.Screen name="SuccessAnimation" component={SuccessAnimation} />
       <Stack.Screen name="PreloaderCircle" component={PreloaderCircle} />
     </Stack.Navigator>
@@ -76,7 +79,7 @@ export default function App() {
         const token = await AsyncStorage.getItem('jwtToken');
         if (token) {
           // Verificar si el token es válido llamando al servidor
-          const response = await axios.post('http://192.168.1.100:3000/verifyToken', { token });  // Asegúrate de usar la IP correcta
+          const response = await axios.post('http://192.168.1.100:3000/verifyToken', { token });
           if (response.data.valid) {
             setIsAuthenticated(true); // El token es válido, el usuario sigue autenticado
           } else {
@@ -102,10 +105,8 @@ export default function App() {
         <ImagePreloader onFinish={() => setIsPreloading(false)} />
       ) : !isConnected ? (
         <NoInternet onRetry={() => setIsPreloading(true)} />
-      ) : isAuthenticated ? (
-        <CustomDrawerNavigator />
       ) : (
-        <MainStackNavigator />
+        <MainStackNavigator />  // Asegúrate de usar siempre el Stack Navigator aquí
       )}
     </NavigationContainer>
   );

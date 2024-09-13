@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Switch, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Switch, View, Animated, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native'; 
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../App';  // Asegúrate de importar el tipo RootStackParamList
+import { RootStackParamList } from '../App';  
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { FontAwesome, MaterialIcons, Entypo } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import Home from './Home'; 
+import QRScreen from './QRScreen';  
 import colors from '../colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Drawer = createDrawerNavigator();
 type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Admin'>;
 
-// Definir el tipo de token decodificado
 interface DecodedToken {
   id: number;
   email: string;
@@ -23,7 +23,6 @@ interface DecodedToken {
   iat: number;
 }
 
-// Función para decodificar JWT con JavaScript nativo
 function decodeJWT(token: string): DecodedToken | null {
   try {
     const base64Url = token.split('.')[1]; 
@@ -41,23 +40,23 @@ function decodeJWT(token: string): DecodedToken | null {
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [isLanguageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   const navigation = useNavigation<AdminScreenNavigationProp>();
 
-  // Estados para almacenar el nombre de usuario y el correo
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
 
-  // Obtener el token de AsyncStorage y decodificarlo
+  const heightAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     const getUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('jwtToken');
         if (token) {
-          const decoded = decodeJWT(token); // Usar la función nativa para decodificar el token
-          
-          // Asignar el nombre y el correo electrónico del token decodificado
-          setUsername(decoded?.name || 'User');  // Usar "User" si no hay nombre
-          setEmail(decoded?.email || '');        // Email debe estar siempre en el token
+          const decoded = decodeJWT(token);
+          setUsername(decoded?.name || 'User');
+          setEmail(decoded?.email || '');
         }
       } catch (error) {
         console.log('Error al obtener el token:', error);
@@ -65,19 +64,36 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
     };
 
     getUserData();
-  }, [props]); // Ejecutar el efecto cada vez que cambien las props para asegurarse de obtener nuevos datos
+  }, [props]);
 
-  // Función para manejar el logout
   const handleLogout = async () => {
     try {
-      // Eliminar el token de AsyncStorage al hacer logout
       await AsyncStorage.removeItem('jwtToken');
-      
-      // Redirigir al login
       navigation.navigate('Login');
     } catch (error) {
       console.log('Error al hacer logout:', error);
     }
+  };
+
+  const toggleLanguageMenu = () => {
+    if (isLanguageMenuOpen) {
+      Animated.timing(heightAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => setLanguageMenuOpen(false));
+    } else {
+      setLanguageMenuOpen(true);
+      Animated.timing(heightAnim, {
+        toValue: 80,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+  const changeLanguage = (language: string) => {
+    setSelectedLanguage(language);
   };
 
   return (
@@ -85,7 +101,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
       <DrawerHeader>
         <ProfileImage source={{ uri: 'https://example.com/user_profile_image.png' }} />
         <UserInfo>
-          {/* Mostrar el nombre y el correo real del usuario */}
           <UsernameText>Hi, {username}</UsernameText>
           <EmailText>{email}</EmailText>
         </UserInfo>
@@ -107,9 +122,15 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           <DrawerLabel>Invite Friends</DrawerLabel>
           <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
         </DrawerItemStyled>
-      </DrawerItemContainer>
 
-      <Separator />
+        <DrawerItemStyled onPress={() => props.navigation.navigate("QRScreen")}>
+          <IconContainer>
+            <FontAwesome name="qrcode" size={24} color={colors.primary} />
+          </IconContainer>
+          <DrawerLabel>Share QR</DrawerLabel>
+          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
+        </DrawerItemStyled>
+      </DrawerItemContainer>
 
       <DrawerItemContainer>
         <DrawerItemStyled>
@@ -124,13 +145,30 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           />
         </DrawerItemStyled>
 
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Home")}>
+        {/* Menú de idioma */}
+        <DrawerItemStyled onPress={toggleLanguageMenu}>
           <IconContainer>
             <FontAwesome name="globe" size={24} color={colors.primary} />
           </IconContainer>
           <DrawerLabel>Language</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
+          <ArrowIcon name={isLanguageMenuOpen ? 'chevron-up' : 'chevron-down'} size={24} color={colors.primary} />
         </DrawerItemStyled>
+
+        {/* Submenú de idiomas con animación */}
+        {isLanguageMenuOpen && (
+          <Animated.View style={{ height: heightAnim, overflow: 'hidden', paddingLeft: 20 }}>
+            <SubMenuItem onPress={() => changeLanguage('English')}>
+              <Flag source={require('../assets/usa.png')} />
+              <SubMenuLabel>English</SubMenuLabel>
+              {selectedLanguage === 'English' && <CheckIcon name="check" size={20} color={colors.primary} />}
+            </SubMenuItem>
+            <SubMenuItem onPress={() => changeLanguage('Spanish')}>
+              <Flag source={require('../assets/spain.png')} />
+              <SubMenuLabel>Spanish</SubMenuLabel>
+              {selectedLanguage === 'Spanish' && <CheckIcon name="check" size={20} color={colors.primary} />}
+            </SubMenuItem>
+          </Animated.View>
+        )}
 
         <DrawerItemStyled onPress={() => props.navigation.navigate("Settings")}>
           <IconContainer>
@@ -155,6 +193,7 @@ export function CustomDrawerNavigator() {
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Profile" component={Home} />
       <Drawer.Screen name="Settings" component={Home} />
+      <Drawer.Screen name="QRScreen" component={QRScreen} /> 
     </Drawer.Navigator>
   );
 }
@@ -220,10 +259,26 @@ const ArrowIcon = styled(Entypo)`
   margin-left: auto;
 `;
 
-const Separator = styled.View`
-  border-bottom-width: 1px;
-  border-bottom-color: ${colors.gray};
-  margin-vertical: 10px;
+const SubMenuItem = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+`;
+
+const Flag = styled.Image`
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+`;
+
+const SubMenuLabel = styled.Text`
+  font-size: 16px;
+  color: ${colors.primary};
+`;
+
+const CheckIcon = styled(Entypo)`
+  margin-left: auto;
+  padding-right: 15px; /* Añadir margen a la derecha del check */
 `;
 
 const LogoutButton = styled.TouchableOpacity`
@@ -240,3 +295,5 @@ const LogoutButtonText = styled.Text`
   font-size: 16px;
   margin-left: 10px;
 `;
+
+export default CustomDrawerContent;
