@@ -7,7 +7,8 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, DrawerConte
 import { FontAwesome, MaterialIcons, Entypo } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import Home from './Home'; 
-import QRScreen from './QRScreen';  
+import QRScreen from './QRScreen'; 
+import InviteFriendsScreen from './InviteFriendsScreen'; 
 import colors from '../colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -115,9 +116,9 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
           <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
         </DrawerItemStyled>
         
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Home")}>
+        <DrawerItemStyled onPress={() => props.navigation.navigate("InviteFriendsScreen")}>
           <IconContainer>
-            <FontAwesome name="users" size={24} color={colors.primary} />
+            <FontAwesome name="user" size={24} color={colors.primary} />
           </IconContainer>
           <DrawerLabel>Invite Friends</DrawerLabel>
           <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
@@ -194,6 +195,8 @@ export function CustomDrawerNavigator() {
       <Drawer.Screen name="Profile" component={Home} />
       <Drawer.Screen name="Settings" component={Home} />
       <Drawer.Screen name="QRScreen" component={QRScreen} /> 
+      <Drawer.Screen name="InviteFriendsScreen" component={InviteFriendsScreen} /> 
+
     </Drawer.Navigator>
   );
 }

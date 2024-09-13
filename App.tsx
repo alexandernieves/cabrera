@@ -14,6 +14,7 @@ import ReferralForm from './screens/ReferralForm';
 import Home from './screens/Home';
 import Chat from './screens/Chat';
 import QRScreen from './screens/QRScreen';
+import InviteFriendsScreen from './screens/InviteFriendsScreen';
 import ImagePreloader from './components/ImagePreloader';
 import NoInternet from './screens/NoInternet';
 import SuccessAnimation from './components/SuccessAnimation';
@@ -24,6 +25,7 @@ export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Signup: undefined;
+  InviteFriendsScreen: undefined;
   ForgotPassword: undefined;
   ConfirmCode: undefined;
   Admin: undefined;
@@ -62,6 +64,7 @@ function MainStackNavigator() {
       <Stack.Screen name="ReferralForm" component={ReferralForm} />
       <Stack.Screen name="Chat" component={Chat} />
       <Stack.Screen name="QRScreen" component={QRScreen} />
+      <Stack.Screen name="InviteFriendsScreen" component={InviteFriendsScreen} />
       <Stack.Screen name="SuccessAnimation" component={SuccessAnimation} />
       <Stack.Screen name="PreloaderCircle" component={PreloaderCircle} />
     </Stack.Navigator>
