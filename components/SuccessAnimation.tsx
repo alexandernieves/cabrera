@@ -52,7 +52,7 @@ const SuccessAnimation = ({ navigation }: { navigation: any }) => {
         <AnimatedCircle style={{ transform: [{ scale: scaleAnim }] }} />
         <CheckMark style={{ opacity: opacityAnim }}>&#10003;</CheckMark>
       </CircleContainer>
-      <SuccessText>You have registered successfully</SuccessText>
+      <SuccessText>Successful registration</SuccessText>
     </Container>
   );
 };
