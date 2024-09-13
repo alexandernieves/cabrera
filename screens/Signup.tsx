@@ -185,46 +185,48 @@ export default function Signup() {
     setEmailError(false);
     setPasswordError(false);
     setNameError(false);
-
+  
     if (name === "") {
       setNameError(true);
       return;
     }
-
+  
     if (email === "") {
       setEmailError(true);
       return;
     }
-
+  
     if (password === "") {
       setPasswordError(true);
       return;
     }
-
+  
     if (!acceptedTerms) {
       alert("You must accept the terms and conditions to sign up.");
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     // Realizamos la petición al backend para crear el usuario
     try {
       const response = await axios.post('http://localhost:3000/signup', {
         name,
         email,
         password
-      });      
-
-      console.log("Respuesta del servidor:", response.data); // Imprime la respuesta completa del servidor
-
+      });
+  
       if (response.data.token) {
+        // Almacenar el token en AsyncStorage
+        await AsyncStorage.setItem('jwtToken', response.data.token);
+        console.log("Token guardado correctamente");
+  
         const decodedToken = decodeJWT(response.data.token);
-        console.log("Token decodificado: ", decodedToken); // Muestra el token decodificado en consola
-
+        console.log("Token decodificado: ", decodedToken);
+  
         await AsyncStorage.setItem('username', name);
         setIsLoading(false);
-
+  
         // Redirigir a PreloaderCircle y luego a SuccessAnimation
         navigation.replace('PreloaderCircle', {
           nextScreen: 'SuccessAnimation', // Después de la precarga, se mostrará la animación de éxito
@@ -238,6 +240,7 @@ export default function Signup() {
       console.error("Signup error", error);
     }
   };
+  
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);

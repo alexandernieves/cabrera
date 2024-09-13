@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native';
@@ -65,6 +65,14 @@ const ReferralCard = styled.View`
   background-color: #f6f7fb;
   border-radius: 10px;
   margin-bottom: 10px;
+`;
+
+const NoReferralsText = styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: #888;
+  text-align: center;
+  margin-top: 20px;
 `;
 
 const Avatar = styled.Image`
@@ -160,7 +168,7 @@ const statusColors: Record<string, { bgColor: string; textColor: string }> = {
 };
 
 export default function Referrals() {
-  const [referralsData, setReferralsData] = useState<any[]>([]); // Cambia la fuente de datos
+  const [referralsData, setReferralsData] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState('All Referrals');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Hasta 5 referidos por página
@@ -181,7 +189,6 @@ export default function Referrals() {
 
         if (response.ok) {
           const data = await response.json();
-          // Asignar avatares aleatorios a cada referido
           const referralsWithAvatars = data.referrals.map((referral: any) => ({
             ...referral,
             avatar: avatars[Math.floor(Math.random() * avatars.length)], // Asignar avatar aleatorio
@@ -247,46 +254,51 @@ export default function Referrals() {
       </FilterContainer>
 
       <ReferralsList>
-        {currentData.map((referral, index) => (
-          <ReferralCard key={index}>
-            <Avatar source={referral.avatar} />
-            <ReferralInfo>
-              <ReferralName>{referral.first_name} {referral.last_name}</ReferralName>
-              <BadgeContainer
-  bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
-  textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
->
-  <BadgeText
-    bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
-    textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
-  >
-    {referral.status || 'Pending'}
-  </BadgeText>
-</BadgeContainer>
-
-            </ReferralInfo>
-          </ReferralCard>
-        ))}
+        {currentData.length === 0 ? (
+          <NoReferralsText>You don't have referrals yet</NoReferralsText> // Mensaje si no hay referidos
+        ) : (
+          currentData.map((referral, index) => (
+            <ReferralCard key={index}>
+              <Avatar source={referral.avatar} />
+              <ReferralInfo>
+                <ReferralName>{referral.first_name} {referral.last_name}</ReferralName>
+                <BadgeContainer
+                  bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
+                  textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
+                >
+                  <BadgeText
+                    bgColor={statusColors[referral.status?.toLowerCase() || 'pending'].bgColor}
+                    textColor={statusColors[referral.status?.toLowerCase() || 'pending'].textColor}
+                  >
+                    {referral.status || 'Pending'}
+                  </BadgeText>
+                </BadgeContainer>
+              </ReferralInfo>
+            </ReferralCard>
+          ))
+        )}
       </ReferralsList>
 
-      {/* Paginación */}
-      <PaginationContainer>
-        <PaginationButton onPress={handlePreviousPage} disabled={currentPage === 1}>
-          <Ionicons name="chevron-back-outline" size={24} color={currentPage === 1 ? '#ccc' : '#002368'} />
-        </PaginationButton>
+      {/* Paginación solo se muestra si hay referidos */}
+      {filteredData.length > 0 && (
+        <PaginationContainer>
+          <PaginationButton onPress={handlePreviousPage} disabled={currentPage === 1}>
+            <Ionicons name="chevron-back-outline" size={24} color={currentPage === 1 ? '#ccc' : '#002368'} />
+          </PaginationButton>
 
-        {[...Array(totalPages)].map((_, index) => (
-          <PageCircle key={index} isActive={index + 1 === currentPage}>
-            <PageNumber isActive={index + 1 === currentPage}>
-              {index + 1}
-            </PageNumber>
-          </PageCircle>
-        ))}
+          {[...Array(totalPages)].map((_, index) => (
+            <PageCircle key={index} isActive={index + 1 === currentPage}>
+              <PageNumber isActive={index + 1 === currentPage}>
+                {index + 1}
+              </PageNumber>
+            </PageCircle>
+          ))}
 
-        <PaginationButton onPress={handleNextPage} disabled={currentPage === totalPages}>
-          <Ionicons name="chevron-forward-outline" size={24} color={currentPage === totalPages ? '#ccc' : '#002368'} />
-        </PaginationButton>
-      </PaginationContainer>
+          <PaginationButton onPress={handleNextPage} disabled={currentPage === totalPages}>
+            <Ionicons name="chevron-forward-outline" size={24} color={currentPage === totalPages ? '#ccc' : '#002368'} />
+          </PaginationButton>
+        </PaginationContainer>
+      )}
 
       <Footer>
         <FooterButton onPress={() => navigation.navigate('Home')}>

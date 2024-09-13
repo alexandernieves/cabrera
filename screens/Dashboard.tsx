@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Dashboard: React.FC = () => {
   const [totalReferrals, setTotalReferrals] = useState(0);
+  const [pendingReferrals, setPendingReferrals] = useState(0); // Estado para referidos pendientes
   const [loading, setLoading] = useState(true);
 
   // Función para obtener el total de referidos desde el backend
@@ -20,7 +21,7 @@ const Dashboard: React.FC = () => {
           return;
         }
 
-        // Realizar la solicitud al backend usando el token almacenado
+        // Realizar la solicitud al backend usando el token almacenado para el total de referidos
         const response = await fetch('http://localhost:3000/referrals/count', {
           headers: {
             Authorization: `${token}`, // Enviar el token en los encabezados
@@ -30,6 +31,8 @@ const Dashboard: React.FC = () => {
         const data = await response.json();
         if (response.ok) {
           setTotalReferrals(data.totalReferrals);
+        } else if (data.message === "jwt expired") {
+          Alert.alert('Error', 'La sesión ha expirado, por favor inicie sesión nuevamente.');
         } else {
           Alert.alert('Error', data.message || 'Error al obtener los referidos.');
         }
@@ -41,7 +44,38 @@ const Dashboard: React.FC = () => {
       }
     };
 
+    const fetchPendingReferrals = async () => {
+      try {
+        // Obtener el token almacenado en AsyncStorage
+        const token = await AsyncStorage.getItem('jwtToken');
+        if (!token) {
+          Alert.alert('Error', 'No se encontró un token, por favor inicie sesión.');
+          return;
+        }
+
+        // Realizar la solicitud al backend para los referidos pendientes
+        const response = await fetch('http://localhost:3000/referrals/count-pending', {
+          headers: {
+            Authorization: `${token}`, // Enviar el token en los encabezados
+          },
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setPendingReferrals(data.pendingReferrals);
+        } else if (data.message === "jwt expired") {
+          Alert.alert('Error', 'La sesión ha expirado, por favor inicie sesión nuevamente.');
+        } else {
+          Alert.alert('Error', data.message || 'Error al obtener los referidos pendientes.');
+        }
+      } catch (error) {
+        console.error('Error fetching pending referrals:', error);
+        Alert.alert('Error', 'Error al obtener los referidos pendientes.');
+      }
+    };
+
     fetchTotalReferrals();
+    fetchPendingReferrals(); // Llamada para obtener los referidos pendientes
   }, []);
 
   return (
@@ -54,7 +88,7 @@ const Dashboard: React.FC = () => {
             {loading ? (
               <ActivityIndicator size="large" color={colors.primary} />
             ) : (
-              <BoxValue>{totalReferrals}</BoxValue>
+              <BoxValue>{totalReferrals === 0 ? "0" : totalReferrals}</BoxValue>
             )}
           </BoxIconAndValue>
         </ReferralBoxLarge>
@@ -72,7 +106,11 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Pending</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="hourglass-half" size={50} color={colors.primary} />
-              <SmallBoxValue>4</SmallBoxValue>
+              {loading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : (
+                <SmallBoxValue>{pendingReferrals}</SmallBoxValue> // Mostrar el número de referidos pendientes
+              )}
             </BoxIconAndValue>
           </ReferralBoxSquare>
         </RowContainer>

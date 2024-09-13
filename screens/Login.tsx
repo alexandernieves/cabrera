@@ -312,17 +312,18 @@ export default function Login({ navigation }: LoginProps) {
         const response = await axios.post('http://localhost:3000/login', {
           email,
           password
-        }, {
-          timeout: 5000  // Tiempo máximo de espera de la petición (5 segundos)
         });
   
         const data = response.data;
   
         if (data.token) {
+          // Guardar el token en AsyncStorage
           await AsyncStorage.setItem('jwtToken', data.token);
+          console.log("Token guardado correctamente en AsyncStorage");
+  
           const token = await AsyncStorage.getItem('jwtToken');
           if (token) {
-            const decodedToken = decodeJWT(token);  
+            const decodedToken = decodeJWT(token);
             setIsLoading(false);
   
             if (decodedToken) {
@@ -337,24 +338,13 @@ export default function Login({ navigation }: LoginProps) {
           shakeAnimation(emailShakeAnimation);
           shakeAnimation(passwordShakeAnimation);
         }
-      } catch (error: unknown) {
+      } catch (error) {
         setIsLoading(false);
-        if (axios.isAxiosError(error)) {
-          if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-            // Error de red, manejado silenciosamente
-            console.log('Error de red: Tiempo de espera excedido');
-          } else if (error.response?.status === 401) {
-            setEmailError(true);
-            setPasswordError(true);
-            shakeAnimation(emailShakeAnimation);
-            shakeAnimation(passwordShakeAnimation);
-          } else {
-            console.log('Error de red: ', error.message);
-          }
-        }
+        console.error("Error en el inicio de sesión:", error);
       }
     }
   };
+  
   
 
   const togglePasswordVisibility = () => {

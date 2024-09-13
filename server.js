@@ -151,6 +151,32 @@ app.post('/referrals', async (req, res) => {
   }
 });
 
+// Ruta para contar los referidos pendientes de un usuario autenticado
+app.get('/referrals/count-pending', async (req, res) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Token no proporcionado' });
+  }
+
+  try {
+    // Verificar y decodificar el token JWT
+    const decoded = jwt.verify(token, secretKey);
+    const userId = decoded.id;
+
+    // Consultar cuántos referidos están en estado 'Pending' para el usuario autenticado
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) AS pendingReferrals FROM referrals WHERE referred_by_user_id = ? AND status = "Pending"',
+      [userId]
+    );
+
+    const pendingReferrals = rows[0].pendingReferrals;
+    res.status(200).json({ pendingReferrals });
+  } catch (error) {
+    console.error('Error al obtener el número de referidos pendientes:', error.message);
+    res.status(500).json({ message: 'Error al obtener los referidos pendientes' });
+  }
+});
 
 
 
