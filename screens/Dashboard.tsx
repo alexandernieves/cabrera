@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Booked</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="check-circle" size={50} color={colors.primary} />
-              <SmallBoxValue>2</SmallBoxValue>
+              <SmallBoxValue>0</SmallBoxValue>
             </BoxIconAndValue>
           </ReferralBoxSquare>
 
@@ -120,7 +120,7 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Closed</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="smile-o" size={50} color={colors.primary} />
-              <SmallBoxValue>1</SmallBoxValue>
+              <SmallBoxValue>0</SmallBoxValue>
             </BoxIconAndValue>
           </ReferralBoxSquare>
 
@@ -128,7 +128,7 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Lost</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="frown-o" size={50} color={colors.primary} />
-              <SmallBoxValue>4</SmallBoxValue>
+              <SmallBoxValue>0</SmallBoxValue>
             </BoxIconAndValue>
           </ReferralBoxSquare>
         </RowContainer>

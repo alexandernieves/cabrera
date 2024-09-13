@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, SafeAreaView, Modal, View, Text, Share, Alert } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { TouchableOpacity, SafeAreaView, Modal, View, Text, Share, Alert, Image } from 'react-native';
 import styled from 'styled-components/native';
 import Header from './Header';
 import QRCode from 'react-native-qrcode-svg'; // Importamos la librería QR
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const QRContainer = styled.View`
   flex: 1;
@@ -14,18 +14,18 @@ const QRContainer = styled.View`
 `;
 
 const AvatarContainer = styled.View`
-  width: 100px;
-  height: 100px;
-  background-color: #F6F7FB;
-  border-radius: 50px;
+  flex-direction: row; /* Alinea las imágenes en fila */
   justify-content: center;
   align-items: center;
   margin-bottom: 10px;
 `;
 
-const AvatarImage = styled(Ionicons)`
-  font-size: 60px;
-  color: #002368;
+const AvatarImage = styled.Image`
+  width: 100px;
+  height: 100px;
+  border-radius: 100px; /* Borde redondeado de 100px */
+  margin-left: 5px;
+  margin-right: 5px; /* Reducimos el margen para que estén más juntas */
 `;
 
 const QRName = styled.Text`
@@ -132,14 +132,11 @@ const QRScreen: React.FC = ({ navigation }: any) => {
 
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
-          // Compartido con una actividad específica
           console.log('Shared with activity: ', result.activityType);
         } else {
-          // Compartido sin actividad específica
           console.log('Link shared');
         }
       } else if (result.action === Share.dismissedAction) {
-        // Cancelado
         console.log('Share dismissed');
       }
     } catch (error: any) {
@@ -153,22 +150,23 @@ const QRScreen: React.FC = ({ navigation }: any) => {
 
       <QRContainer>
         <AvatarContainer>
-          <AvatarImage name="person" />
+          {/* Mostrar las tres imágenes predeterminadas, con default2 en el centro */}
+          <AvatarImage source={require('../assets/default.png')} />
+          <AvatarImage source={require('../assets/default2.png')} />
+          <AvatarImage source={require('../assets/default1.png')} />
         </AvatarContainer>
-        <QRName>Alex Storm</QRName>
-        <QRSubtitle>Scan my Contact Number</QRSubtitle>
+        <QRName>Invite your friends</QRName>
+        <QRSubtitle>The more friends, the greater the reward</QRSubtitle>
 
         <QRCodeContainer>
           <QRCodeImage source={require('../assets/qr-code-placeholder.png')} />
         </QRCodeContainer>
 
-        {/* Botón para abrir el modal */}
         <ActionButton onPress={openModal}>
           <Ionicons name="image-outline" size={24} color="#fff" />
           <ActionButtonText>Generate QR</ActionButtonText>
         </ActionButton>
 
-        {/* Botón para compartir el enlace */}
         <ActionButton onPress={shareLink}>
           <Ionicons name="share-outline" size={24} color="#fff" />
           <ActionButtonText>Share Link</ActionButtonText>
@@ -179,7 +177,6 @@ const QRScreen: React.FC = ({ navigation }: any) => {
         </TouchableOpacity>
       </QRContainer>
 
-      {/* Modal para mostrar el QR */}
       <Modal
         transparent={true}
         visible={modalVisible}
@@ -194,7 +191,6 @@ const QRScreen: React.FC = ({ navigation }: any) => {
             {/* Código QR que redirige a www.google.com */}
             <QRCode value="https://www.google.com" size={200} />
             
-            {/* Botón para cerrar el modal */}
             <CloseButton onPress={closeModal}>
               <CloseButtonText>Close</CloseButtonText>
             </CloseButton>

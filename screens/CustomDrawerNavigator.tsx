@@ -11,9 +11,24 @@ import QRScreen from './QRScreen';
 import InviteFriendsScreen from './InviteFriendsScreen'; 
 import colors from '../colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Drawer = createDrawerNavigator();
 type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Admin'>;
+
+const avatarImages: { [key: number]: any } = {
+  0: require('../assets/1.png'),
+  1: require('../assets/2.png'),
+  2: require('../assets/3.png'),
+  3: require('../assets/4.png'),
+  4: require('../assets/5.png'),
+  5: require('../assets/6.png'),
+  6: require('../assets/7.png'),
+  7: require('../assets/8.png'),
+  8: require('../assets/9.png'),
+  9: require('../assets/10.png'),
+};
+
 
 interface DecodedToken {
   id: number;
@@ -44,11 +59,29 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
   const [isLanguageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const navigation = useNavigation<AdminScreenNavigationProp>();
+  const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null); 
+
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
 
   const heightAnim = useRef(new Animated.Value(0)).current;
+
+    // Cargar el avatar almacenado desde AsyncStorage
+  useEffect(() => {
+    const loadAvatar = async () => {
+      try {
+        const storedAvatar = await AsyncStorage.getItem('selectedAvatar');
+        if (storedAvatar !== null) {
+          setSelectedAvatar(JSON.parse(storedAvatar));
+        }
+      } catch (error) {
+        console.error('Error al cargar el avatar:', error);
+      }
+    };
+
+    loadAvatar();
+  }, []);
 
   useEffect(() => {
     const getUserData = async () => {
@@ -98,24 +131,22 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
   };
 
   return (
+    
     <DrawerContentScrollView {...props}>
+  
       <DrawerHeader>
-        <ProfileImage source={{ uri: 'https://example.com/user_profile_image.png' }} />
-        <UserInfo>
+          {selectedAvatar !== null ? (
+            <AvatarImage source={avatarImages[selectedAvatar]} />
+          ) : (
+            <Ionicons name="person" size={60} color="#002368" />
+          )}
+             <UserInfo>
           <UsernameText>Hi, {username}</UsernameText>
           <EmailText>{email}</EmailText>
         </UserInfo>
       </DrawerHeader>
 
-      <DrawerItemContainer>
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Profile")}>
-          <IconContainer>
-            <FontAwesome name="user" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>My Profile</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
-        
+      <DrawerItemContainer>        
         <DrawerItemStyled onPress={() => props.navigation.navigate("InviteFriendsScreen")}>
           <IconContainer>
             <FontAwesome name="user" size={24} color={colors.primary} />
@@ -133,7 +164,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         </DrawerItemStyled>
       </DrawerItemContainer>
 
-      <DrawerItemContainer>
+      <DrawerItemContainer >
         <DrawerItemStyled>
           <IconContainer>
             <MaterialIcons name="notifications" size={24} color={colors.primary} />
@@ -163,11 +194,11 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
               <SubMenuLabel>English</SubMenuLabel>
               {selectedLanguage === 'English' && <CheckIcon name="check" size={20} color={colors.primary} />}
             </SubMenuItem>
-            <SubMenuItem onPress={() => changeLanguage('Spanish')}>
+            {/* <SubMenuItem onPress={() => changeLanguage('Spanish')}>
               <Flag source={require('../assets/spain.png')} />
               <SubMenuLabel>Spanish</SubMenuLabel>
               {selectedLanguage === 'Spanish' && <CheckIcon name="check" size={20} color={colors.primary} />}
-            </SubMenuItem>
+            </SubMenuItem> */}
           </Animated.View>
         )}
 
@@ -209,12 +240,15 @@ const DrawerHeader = styled.View`
   background-color: ${colors.lightGray};
 `;
 
-const ProfileImage = styled.Image`
-  width: 60px;
-  height: 60px;
-  border-radius: 30px;
-  margin-right: 15px;
+
+
+const AvatarImage = styled.Image`
+  width: 70px;
+  height: 70px;
+  margin-right:20px;
+  border-radius: 50px;
 `;
+
 
 const UserInfo = styled.View`
   flex-direction: column;
@@ -290,7 +324,11 @@ const LogoutButton = styled.TouchableOpacity`
   background-color: #002368;
   padding: 15px;
   border-radius: 10px;
-  margin: 20px;
+  margin: 20px 20px 0 20px; /* Deja margen inferior al botón */
+  position: absolute;
+  bottom: 0px; /* Posición al final del contenedor */
+  left: 0;
+  right: 0;
 `;
 
 const LogoutButtonText = styled.Text`
