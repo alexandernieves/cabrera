@@ -338,9 +338,19 @@ export default function Login({ navigation }: LoginProps) {
           shakeAnimation(emailShakeAnimation);
           shakeAnimation(passwordShakeAnimation);
         }
-      } catch (error) {
+      } catch (err) {
         setIsLoading(false);
-        console.error("Error en el inicio de sesión:", error);
+        const error = err as any; // Conversión explícita
+        if (error.response && error.response.status === 401) {
+          // Error de credenciales incorrectas (usuario no encontrado o contraseña incorrecta)
+          setEmailError(true);
+          setPasswordError(true);
+          shakeAnimation(emailShakeAnimation);
+          shakeAnimation(passwordShakeAnimation);
+          // console.error("Credenciales incorrectas");
+        } else {
+          console.error("Error en el inicio de sesión:", error);
+        }
       }
     }
   };

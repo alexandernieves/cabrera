@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, SafeAreaView, Modal, View, Text, Share, Alert, Image } from 'react-native';
+import { TouchableOpacity, SafeAreaView, Modal, View, Text, Share, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import Header from './Header';
 import QRCode from 'react-native-qrcode-svg'; // Importamos la librería QR
@@ -9,69 +9,60 @@ const QRContainer = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
+  background-color: #f9f9f9;
   padding: 20px;
 `;
 
-const AvatarContainer = styled.View`
-  flex-direction: row; /* Alinea las imágenes en fila */
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 10px;
-`;
-
-const AvatarImage = styled.Image`
-  width: 100px;
-  height: 100px;
-  border-radius: 100px; /* Borde redondeado de 100px */
-  margin-left: 5px;
-  margin-right: 5px; /* Reducimos el margen para que estén más juntas */
-`;
-
 const QRName = styled.Text`
-  font-size: 22px;
+  font-size: 16px;
   font-weight: bold;
   color: #002368;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
+  text-align: center;
 `;
 
 const QRSubtitle = styled.Text`
   font-size: 16px;
-  color: #888;
-  margin-bottom: 20px;
+  color: #444;
+  margin-top: 25px;
+  text-align: center;
+  line-height: 22px;
 `;
 
 const QRCodeContainer = styled.View`
-  width: 200px;
-  height: 200px;
-  background-color: #F6F7FB;
-  border-radius: 20px;
+  width: 240px;
+  height: 240px;
+  background-color: #ffffff;
+  border-radius: 15px;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
-`;
-
-const QRCodeImage = styled.Image`
-  width: 150px;
-  height: 150px;
+  margin-bottom: 30px;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 5px;
+  elevation: 4; /* Para dispositivos Android */
 `;
 
 const ActionButton = styled(TouchableOpacity)`
-  width: 90%;
+  width: 80%;
   background-color: #002368;
   border-radius: 10px;
   padding: 15px;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 12px;
   flex-direction: row;
+  shadow-color: #000;
+  shadow-opacity: 0.2;
+  shadow-radius: 5px;
+  elevation: 4; /* Sombra para Android */
 `;
 
 const ActionButtonText = styled.Text`
   color: #fff;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: bold;
-  margin-left: 10px;
+  margin-left: 8px;
 `;
 
 const ModalContainer = styled.View`
@@ -82,19 +73,23 @@ const ModalContainer = styled.View`
 `;
 
 const ModalContent = styled.View`
-  width: 80%;
-  padding: 20px;
+  width: 85%;
+  padding: 25px;
   background-color: white;
   border-radius: 10px;
   justify-content: center;
   align-items: center;
+  shadow-color: #000;
+  shadow-opacity: 0.2;
+  shadow-radius: 5px;
+  elevation: 4; /* Sombra para Android */
 `;
 
 const CloseButton = styled(TouchableOpacity)`
   background-color: #002368;
-  padding: 10px;
-  margin-top: 20px;
-  border-radius: 5px;
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 8px;
 `;
 
 const CloseButtonText = styled.Text`
@@ -149,30 +144,29 @@ const QRScreen: React.FC = ({ navigation }: any) => {
       <Header />
 
       <QRContainer>
-        <AvatarContainer>
-          {/* Mostrar las tres imágenes predeterminadas, con default2 en el centro */}
-          <AvatarImage source={require('../assets/default.png')} />
-          <AvatarImage source={require('../assets/default2.png')} />
-          <AvatarImage source={require('../assets/default1.png')} />
-        </AvatarContainer>
-        <QRName>Invite your friends</QRName>
-        <QRSubtitle>The more friends, the greater the reward</QRSubtitle>
+        <QRName>
+          Spread the word about our referral program by sharing the app with friends. While sharing the app is a great way to let them know, remember that to earn your commission, you need to enter their referral details directly.
+        </QRName>
 
         <QRCodeContainer>
-          <QRCodeImage source={require('../assets/qr-code-placeholder.png')} />
+          <QRCode value="https://www.google.com" size={200} />
         </QRCodeContainer>
 
-        <ActionButton onPress={openModal}>
-          <Ionicons name="image-outline" size={24} color="#fff" />
+        {/* <ActionButton onPress={openModal}>
+          <Ionicons name="qr-code-outline" size={24} color="#fff" />
           <ActionButtonText>Generate QR</ActionButtonText>
-        </ActionButton>
+        </ActionButton> */}
 
         <ActionButton onPress={shareLink}>
           <Ionicons name="share-outline" size={24} color="#fff" />
           <ActionButtonText>Share Link</ActionButtonText>
         </ActionButton>
 
-        <TouchableOpacity style={{ marginTop: 20 }} onPress={navigateToHome}>
+        <QRSubtitle>
+          Important: To earn a commission, make sure you submit your friend’s information through the referral form. Sharing the app alone will not qualify for payment.
+        </QRSubtitle>
+
+        <TouchableOpacity style={{ marginTop: 25 }} onPress={navigateToHome}>
           <Ionicons name="home-outline" size={28} color="#002368" />
         </TouchableOpacity>
       </QRContainer>
@@ -188,7 +182,6 @@ const QRScreen: React.FC = ({ navigation }: any) => {
             <Text style={{ marginBottom: 20, fontSize: 18, fontWeight: 'bold' }}>
               Scan this QR Code
             </Text>
-            {/* Código QR que redirige a www.google.com */}
             <QRCode value="https://www.google.com" size={200} />
             
             <CloseButton onPress={closeModal}>

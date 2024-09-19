@@ -16,20 +16,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 const Drawer = createDrawerNavigator();
 type AdminScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Admin'>;
 
-const avatarImages: { [key: number]: any } = {
-  0: require('../assets/1.png'),
-  1: require('../assets/2.png'),
-  2: require('../assets/3.png'),
-  3: require('../assets/4.png'),
-  4: require('../assets/5.png'),
-  5: require('../assets/6.png'),
-  6: require('../assets/7.png'),
-  7: require('../assets/8.png'),
-  8: require('../assets/9.png'),
-  9: require('../assets/10.png'),
-};
-
-
 interface DecodedToken {
   id: number;
   email: string;
@@ -55,33 +41,13 @@ function decodeJWT(token: string): DecodedToken | null {
 }
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true); // Switch activado por defecto
   const [isLanguageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const navigation = useNavigation<AdminScreenNavigationProp>();
-  const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null); 
-
-
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-
   const heightAnim = useRef(new Animated.Value(0)).current;
-
-    // Cargar el avatar almacenado desde AsyncStorage
-  useEffect(() => {
-    const loadAvatar = async () => {
-      try {
-        const storedAvatar = await AsyncStorage.getItem('selectedAvatar');
-        if (storedAvatar !== null) {
-          setSelectedAvatar(JSON.parse(storedAvatar));
-        }
-      } catch (error) {
-        console.error('Error al cargar el avatar:', error);
-      }
-    };
-
-    loadAvatar();
-  }, []);
 
   useEffect(() => {
     const getUserData = async () => {
@@ -89,21 +55,31 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         const token = await AsyncStorage.getItem('jwtToken');
         if (token) {
           const decoded = decodeJWT(token);
-          setUsername(decoded?.name || 'User');
+          setUsername(decoded?.name || '');
           setEmail(decoded?.email || '');
         }
       } catch (error) {
         console.log('Error al obtener el token:', error);
       }
     };
-
     getUserData();
   }, [props]);
 
+  // Función para desloguear al usuario
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('jwtToken');
-      navigation.navigate('Login');
+      const token = await AsyncStorage.getItem('jwtToken');
+      
+      if (token) {
+        await fetch('http://localhost:3000/logout', {
+          method: 'POST',
+          headers: {
+            Authorization: `${token}`,
+          },
+        });
+        await AsyncStorage.removeItem('jwtToken');
+        navigation.navigate('Login');
+      }
     } catch (error) {
       console.log('Error al hacer logout:', error);
     }
@@ -131,90 +107,76 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
   };
 
   return (
-    
     <DrawerContentScrollView {...props}>
-  
-      <DrawerHeader>
-          {selectedAvatar !== null ? (
-            <AvatarImage source={avatarImages[selectedAvatar]} />
-          ) : (
-            <Ionicons name="person" size={60} color="#002368" />
-          )}
-             <UserInfo>
-          <UsernameText>Hi, {username}</UsernameText>
-          <EmailText>{email}</EmailText>
-        </UserInfo>
-      </DrawerHeader>
+      <DrawerContentContainer>
+        <View>
+          <DrawerHeader>
+            <AvatarIcon>
+              <Ionicons name="person" size={40} color="#fff" />
+            </AvatarIcon>
+            <UserInfo>
+              <UsernameText>Hi, {username}</UsernameText>
+              <EmailText>{email}</EmailText>
+            </UserInfo>
+          </DrawerHeader>
 
-      <DrawerItemContainer>        
-        <DrawerItemStyled onPress={() => props.navigation.navigate("InviteFriendsScreen")}>
-          <IconContainer>
-            <FontAwesome name="user" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Invite Friends</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
+          <DrawerItemContainer> 
+            <DrawerItemStyled onPress={() => props.navigation.navigate("QRScreen")}>
+              <IconContainer>
+                <FontAwesome name="qrcode" size={24} color={colors.primary} />
+              </IconContainer>
+              <DrawerLabel>Share QR</DrawerLabel>
+              <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
+            </DrawerItemStyled>
 
-        <DrawerItemStyled onPress={() => props.navigation.navigate("QRScreen")}>
-          <IconContainer>
-            <FontAwesome name="qrcode" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Share QR</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
-      </DrawerItemContainer>
+            <DrawerItemStyled>
+              <IconContainer>
+                <MaterialIcons name="notifications" size={24} color={colors.primary} />
+              </IconContainer>
+              <DrawerLabel>Notifications</DrawerLabel>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
+                trackColor={{ false: '#767577', true: colors.primary }} // Color del fondo cuando está activo/inactivo
+                thumbColor={notificationsEnabled ? '#fff' : '#f4f3f4'} // Pulgar permanece blanco
+                style={{ marginLeft: 'auto' }}
+              />
+            </DrawerItemStyled>
 
-      <DrawerItemContainer >
-        <DrawerItemStyled>
-          <IconContainer>
-            <MaterialIcons name="notifications" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Notifications</DrawerLabel>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
-            style={{ marginLeft: 'auto' }}
-          />
-        </DrawerItemStyled>
+            <DrawerItemStyled onPress={toggleLanguageMenu}>
+              <IconContainer>
+                <FontAwesome name="globe" size={24} color={colors.primary} />
+              </IconContainer>
+              <DrawerLabel>Language</DrawerLabel>
+              <ArrowIcon name={isLanguageMenuOpen ? 'chevron-up' : 'chevron-down'} size={24} color={colors.primary} />
+            </DrawerItemStyled>
 
-        {/* Menú de idioma */}
-        <DrawerItemStyled onPress={toggleLanguageMenu}>
-          <IconContainer>
-            <FontAwesome name="globe" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Language</DrawerLabel>
-          <ArrowIcon name={isLanguageMenuOpen ? 'chevron-up' : 'chevron-down'} size={24} color={colors.primary} />
-        </DrawerItemStyled>
+            {isLanguageMenuOpen && (
+              <Animated.View style={{ height: heightAnim, overflow: 'hidden', paddingLeft: 20 }}>
+                <SubMenuItem onPress={() => changeLanguage('English')}>
+                  <SubMenuLabel>English</SubMenuLabel>
+                  {selectedLanguage === 'English' && <CheckIcon name="check" size={20} color={colors.primary} />}
+                </SubMenuItem>
+              </Animated.View>
+            )}
 
-        {/* Submenú de idiomas con animación */}
-        {isLanguageMenuOpen && (
-          <Animated.View style={{ height: heightAnim, overflow: 'hidden', paddingLeft: 20 }}>
-            <SubMenuItem onPress={() => changeLanguage('English')}>
-              <Flag source={require('../assets/usa.png')} />
-              <SubMenuLabel>English</SubMenuLabel>
-              {selectedLanguage === 'English' && <CheckIcon name="check" size={20} color={colors.primary} />}
-            </SubMenuItem>
-            {/* <SubMenuItem onPress={() => changeLanguage('Spanish')}>
-              <Flag source={require('../assets/spain.png')} />
-              <SubMenuLabel>Spanish</SubMenuLabel>
-              {selectedLanguage === 'Spanish' && <CheckIcon name="check" size={20} color={colors.primary} />}
-            </SubMenuItem> */}
-          </Animated.View>
-        )}
+            {/* <DrawerItemStyled onPress={() => props.navigation.navigate("Settings")}>
+              <IconContainer>
+                <FontAwesome name="cog" size={24} color={colors.primary} />
+              </IconContainer>
+              <DrawerLabel>Settings</DrawerLabel>
+              <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
+            </DrawerItemStyled> */}
+          </DrawerItemContainer>
+        </View>
 
-        <DrawerItemStyled onPress={() => props.navigation.navigate("Settings")}>
-          <IconContainer>
-            <FontAwesome name="cog" size={24} color={colors.primary} />
-          </IconContainer>
-          <DrawerLabel>Settings</DrawerLabel>
-          <ArrowIcon name="chevron-right" size={24} color={colors.primary} />
-        </DrawerItemStyled>
-      </DrawerItemContainer>
-
-      <LogoutButton onPress={handleLogout}>
-        <FontAwesome name="sign-out" size={24} color="#fff" />
-        <LogoutButtonText>Log Out</LogoutButtonText>
-      </LogoutButton>
+        <LogoutButtonContainer>
+          <LogoutButton onPress={handleLogout}>
+            <FontAwesome name="sign-out" size={24} color="#fff" />
+            <LogoutButtonText>Log Out</LogoutButtonText>
+          </LogoutButton>
+        </LogoutButtonContainer>
+      </DrawerContentContainer>
     </DrawerContentScrollView>
   );
 }
@@ -227,12 +189,16 @@ export function CustomDrawerNavigator() {
       <Drawer.Screen name="Settings" component={Home} />
       <Drawer.Screen name="QRScreen" component={QRScreen} /> 
       <Drawer.Screen name="InviteFriendsScreen" component={InviteFriendsScreen} /> 
-
     </Drawer.Navigator>
   );
 }
 
 // Estilos personalizados
+const DrawerContentContainer = styled.View`
+  flex: 1;
+  justify-content: space-between; /* Empuja el botón de logout hacia el fondo */
+`;
+
 const DrawerHeader = styled.View`
   padding: 20px;
   flex-direction: row;
@@ -240,15 +206,15 @@ const DrawerHeader = styled.View`
   background-color: ${colors.lightGray};
 `;
 
-
-
-const AvatarImage = styled.Image`
-  width: 70px;
-  height: 70px;
-  margin-right:20px;
-  border-radius: 50px;
+const AvatarIcon = styled.View`
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: ${colors.primary}; /* Azul de la empresa */
+  justify-content: center;
+  align-items: center;
+  margin-right: 20px;
 `;
-
 
 const UserInfo = styled.View`
   flex-direction: column;
@@ -302,12 +268,6 @@ const SubMenuItem = styled.TouchableOpacity`
   padding: 10px 0;
 `;
 
-const Flag = styled.Image`
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-`;
-
 const SubMenuLabel = styled.Text`
   font-size: 16px;
   color: ${colors.primary};
@@ -318,17 +278,19 @@ const CheckIcon = styled(Entypo)`
   padding-right: 15px; /* Añadir margen a la derecha del check */
 `;
 
+const LogoutButtonContainer = styled.View`
+  padding: 20px;
+  background-color: transparent;
+`;
+
 const LogoutButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   background-color: #002368;
   padding: 15px;
   border-radius: 10px;
-  margin: 20px 20px 0 20px; /* Deja margen inferior al botón */
-  position: absolute;
-  bottom: 0px; /* Posición al final del contenedor */
-  left: 0;
-  right: 0;
+  margin-top: 100%;
+  justify-content: center;
 `;
 
 const LogoutButtonText = styled.Text`

@@ -8,21 +8,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const Dashboard: React.FC = () => {
   const [totalReferrals, setTotalReferrals] = useState(0);
   const [pendingReferrals, setPendingReferrals] = useState(0); // Estado para referidos pendientes
+  const [bookedReferrals, setBookedReferrals] = useState(0); // Estado para referidos Booked
+  const [closedReferrals, setClosedReferrals] = useState(0); // Estado para referidos Closed
+  const [lostReferrals, setLostReferrals] = useState(0); // Estado para referidos Lost
   const [loading, setLoading] = useState(true);
 
-  // Función para obtener el total de referidos desde el backend
+  // Función para obtener los datos desde el backend
   useEffect(() => {
-    const fetchTotalReferrals = async () => {
+    const fetchData = async (url: string, setState: React.Dispatch<React.SetStateAction<number>>, label: string) => {
       try {
-        // Obtener el token almacenado en AsyncStorage
         const token = await AsyncStorage.getItem('jwtToken');
         if (!token) {
           Alert.alert('Error', 'No se encontró un token, por favor inicie sesión.');
           return;
         }
 
-        // Realizar la solicitud al backend usando el token almacenado para el total de referidos
-        const response = await fetch('http://localhost:3000/referrals/count', {
+        const response = await fetch(url, {
           headers: {
             Authorization: `${token}`, // Enviar el token en los encabezados
           },
@@ -30,52 +31,28 @@ const Dashboard: React.FC = () => {
 
         const data = await response.json();
         if (response.ok) {
-          setTotalReferrals(data.totalReferrals);
+          setState(data[label]);
         } else if (data.message === "jwt expired") {
           Alert.alert('Error', 'La sesión ha expirado, por favor inicie sesión nuevamente.');
         } else {
-          Alert.alert('Error', data.message || 'Error al obtener los referidos.');
+          Alert.alert('Error', data.message || `Error al obtener los referidos de ${label}.`);
         }
       } catch (error) {
-        console.error('Error fetching total referrals:', error);
-        Alert.alert('Error', 'Error al obtener los referidos.');
-      } finally {
-        setLoading(false);
+        console.error(`Error fetching ${label} referrals:`, error);
+        Alert.alert('Error', `Error al obtener los referidos de ${label}.`);
       }
     };
 
-    const fetchPendingReferrals = async () => {
-      try {
-        // Obtener el token almacenado en AsyncStorage
-        const token = await AsyncStorage.getItem('jwtToken');
-        if (!token) {
-          Alert.alert('Error', 'No se encontró un token, por favor inicie sesión.');
-          return;
-        }
-
-        // Realizar la solicitud al backend para los referidos pendientes
-        const response = await fetch('http://localhost:3000/referrals/count-pending', {
-          headers: {
-            Authorization: `${token}`, // Enviar el token en los encabezados
-          },
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          setPendingReferrals(data.pendingReferrals);
-        } else if (data.message === "jwt expired") {
-          Alert.alert('Error', 'La sesión ha expirado, por favor inicie sesión nuevamente.');
-        } else {
-          Alert.alert('Error', data.message || 'Error al obtener los referidos pendientes.');
-        }
-      } catch (error) {
-        console.error('Error fetching pending referrals:', error);
-        Alert.alert('Error', 'Error al obtener los referidos pendientes.');
-      }
+    const fetchAllData = async () => {
+      await fetchData('http://localhost:3000/referrals/count', setTotalReferrals, 'totalReferrals');
+      await fetchData('http://localhost:3000/referrals/count-pending', setPendingReferrals, 'pendingReferrals');
+      await fetchData('http://localhost:3000/referrals/count-booked', setBookedReferrals, 'bookedReferrals');
+      await fetchData('http://localhost:3000/referrals/count-closed', setClosedReferrals, 'closedReferrals');
+      await fetchData('http://localhost:3000/referrals/count-lost', setLostReferrals, 'lostReferrals');
+      setLoading(false);
     };
 
-    fetchTotalReferrals();
-    fetchPendingReferrals(); // Llamada para obtener los referidos pendientes
+    fetchAllData();
   }, []);
 
   return (
@@ -98,7 +75,11 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Booked</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="check-circle" size={50} color={colors.primary} />
-              <SmallBoxValue>0</SmallBoxValue>
+              {loading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : (
+                <SmallBoxValue>{bookedReferrals}</SmallBoxValue> // Mostrar el número de referidos Booked
+              )}
             </BoxIconAndValue>
           </ReferralBoxSquare>
 
@@ -109,7 +90,7 @@ const Dashboard: React.FC = () => {
               {loading ? (
                 <ActivityIndicator size="large" color={colors.primary} />
               ) : (
-                <SmallBoxValue>{pendingReferrals}</SmallBoxValue> // Mostrar el número de referidos pendientes
+                <SmallBoxValue>{pendingReferrals}</SmallBoxValue> // Mostrar el número de referidos Pending
               )}
             </BoxIconAndValue>
           </ReferralBoxSquare>
@@ -120,7 +101,11 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Closed</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="smile-o" size={50} color={colors.primary} />
-              <SmallBoxValue>0</SmallBoxValue>
+              {loading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : (
+                <SmallBoxValue>{closedReferrals}</SmallBoxValue> // Mostrar el número de referidos Closed
+              )}
             </BoxIconAndValue>
           </ReferralBoxSquare>
 
@@ -128,7 +113,11 @@ const Dashboard: React.FC = () => {
             <SmallBoxTitle>Lost</SmallBoxTitle>
             <BoxIconAndValue>
               <FontAwesome name="frown-o" size={50} color={colors.primary} />
-              <SmallBoxValue>0</SmallBoxValue>
+              {loading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : (
+                <SmallBoxValue>{lostReferrals}</SmallBoxValue> // Mostrar el número de referidos Lost
+              )}
             </BoxIconAndValue>
           </ReferralBoxSquare>
         </RowContainer>

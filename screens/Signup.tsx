@@ -98,7 +98,7 @@ const TermsText = styled.Text`
 const LinkText = styled.Text`
   color: #E91E63;
   font-size: 14px;
-  margin-left: 5px;
+  margin-left: 0px; /* Eliminar el margen izquierdo */
 `;
 
 const CustomCheckbox = styled.TouchableOpacity`

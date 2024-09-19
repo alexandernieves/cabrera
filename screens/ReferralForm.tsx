@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { ScrollView, View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Modal } from "react-native";
 import styled from 'styled-components/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../colors';
@@ -30,11 +30,15 @@ const ReferralForm: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [vehicleStatus, setVehicleStatus] = useState('');
+  const [vehicleStatus, setVehicleStatus] = useState(''); // Estado para el radio button
   const [vehicleBrand, setVehicleBrand] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
+  const [selectedDealerships, setSelectedDealerships] = useState<string[]>([]); // Almacena los dealerships seleccionados
+  const [isDealershipDropdownVisible, setDealershipDropdownVisible] = useState(false); // Dropdown visibility
   const [step, setStep] = useState(1);
   
+  const [isDropdownVisible, setDropdownVisible] = useState(false);
+
   // Estados para las validaciones del primer paso
   const [firstNameValid, setFirstNameValid] = useState(true);
   const [lastNameValid, setLastNameValid] = useState(true);
@@ -45,8 +49,12 @@ const ReferralForm: React.FC = () => {
   const [vehicleStatusValid, setVehicleStatusValid] = useState(true);
   const [vehicleBrandValid, setVehicleBrandValid] = useState(true);
   const [vehicleModelValid, setVehicleModelValid] = useState(true);
+  const [dealershipsValid, setDealershipsValid] = useState(true); // Validación de dealerships
 
   const navigation = useNavigation<ReferralFormNavigationProp>();
+
+  // Lista de opciones de dealerships
+  const dealerships = ['GM', 'Ford', 'Nissan', 'CDJR', 'Usados'];
 
   // Función para validar los campos del primer paso
   const validateFirstStepInputs = () => {
@@ -109,7 +117,23 @@ const ReferralForm: React.FC = () => {
       setVehicleModelValid(true);
     }
 
+    if (selectedDealerships.length === 0) {
+      setDealershipsValid(false);
+      isValid = false;
+    } else {
+      setDealershipsValid(true);
+    }
+
     return isValid;
+  };
+
+  // Función para manejar la selección de dealerships
+  const toggleDealership = (dealership: string) => {
+    setSelectedDealerships(prev => 
+      prev.includes(dealership)
+        ? prev.filter(d => d !== dealership)
+        : [...prev, dealership]
+    );
   };
 
   const nextStep = () => {
@@ -150,9 +174,10 @@ const ReferralForm: React.FC = () => {
           last_name: lastName,
           phone_number: phoneNumber,
           email: email,
-          vehicle_status: vehicleStatus,
+          vehicle_status: vehicleStatus,  
           vehicle_brand: vehicleBrand,
           vehicle_model: vehicleModel,
+          dealerships: selectedDealerships, // Enviar los dealerships seleccionados
           referred_by_user_id: decoded.id,
           status: 'Pending',
         }),
@@ -166,6 +191,7 @@ const ReferralForm: React.FC = () => {
         setVehicleStatus('');
         setVehicleBrand('');
         setVehicleModel('');
+        setSelectedDealerships([]); // Limpiar selección de dealerships
         setStep(1);
         navigation.navigate('SuccessAnimation', { nextScreen: 'ReferralForm' });
       } else {
@@ -179,93 +205,282 @@ const ReferralForm: React.FC = () => {
   };
 
   return (
-    <Container>
-      <Title>Your reference, our best treatment</Title>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <Container>
+          {step === 1 ? (
+            <Title>Enter your friend’s details below so the dealership can get in touch and assist them with finding their next vehicle.</Title>
+          ) : (
+            <FooterText>By submitting this referral, you confirm that you have their permission to share their contact details with us.</FooterText>
+          )}
 
-      {step === 1 ? (
-        <>
-          <InputLabel>First Name</InputLabel>
-          <StyledInput 
-            placeholder="Enter your first name" 
-            value={firstName} 
-            onChangeText={setFirstName} 
-            style={{ borderColor: firstNameValid ? colors.primary : 'red' }}
-          />
-          {!firstNameValid && <ErrorText>First Name invalid</ErrorText>}
+          {step === 1 ? (
+            <>
+              <InputLabel>First Name</InputLabel>
+              <StyledInput 
+                placeholder="Enter your first name" 
+                value={firstName} 
+                onChangeText={setFirstName} 
+                style={{ borderColor: firstNameValid ? colors.primary : 'red' }}
+              />
+              {!firstNameValid && <ErrorText>First Name invalid</ErrorText>}
 
-          <InputLabel>Last Name</InputLabel>
-          <StyledInput 
-            placeholder="Enter your last name" 
-            value={lastName} 
-            onChangeText={setLastName} 
-            style={{ borderColor: lastNameValid ? colors.primary : 'red' }}
-          />
-          {!lastNameValid && <ErrorText>Last Name invalid</ErrorText>}
+              <InputLabel>Last Name</InputLabel>
+              <StyledInput 
+                placeholder="Enter your last name" 
+                value={lastName} 
+                onChangeText={setLastName} 
+                style={{ borderColor: lastNameValid ? colors.primary : 'red' }}
+              />
+              {!lastNameValid && <ErrorText>Last Name invalid</ErrorText>}
 
-          <InputLabel>Phone number</InputLabel>
-          <StyledInput 
-            placeholder="+###" 
-            keyboardType="phone-pad" 
-            value={phoneNumber} 
-            onChangeText={setPhoneNumber} 
-            style={{ borderColor: phoneNumberValid ? colors.primary : 'red' }}
-          />
-          {!phoneNumberValid && <ErrorText>Phone number invalid (numbers only)</ErrorText>}
+              <InputLabel>Phone number</InputLabel>
+              <StyledInput 
+                placeholder="+###" 
+                keyboardType="phone-pad" 
+                value={phoneNumber} 
+                onChangeText={setPhoneNumber} 
+                style={{ borderColor: phoneNumberValid ? colors.primary : 'red' }}
+              />
+              {!phoneNumberValid && <ErrorText>Phone number invalid (numbers only)</ErrorText>}
 
-          <InputLabel>E-mail</InputLabel>
-          <StyledInput 
-            placeholder="Enter your email" 
-            keyboardType="email-address" 
-            value={email} 
-            onChangeText={setEmail} 
-            style={{ borderColor: emailValid ? colors.primary : 'red' }}
-          />
-          {!emailValid && <ErrorText>Email invalid (must include @)</ErrorText>}
+              <InputLabel>E-mail</InputLabel>
+              <StyledInput 
+                placeholder="Enter your email" 
+                keyboardType="email-address" 
+                value={email} 
+                onChangeText={setEmail} 
+                style={{ borderColor: emailValid ? colors.primary : 'red' }}
+              />
+              {!emailValid && <ErrorText>Email invalid (must include @)</ErrorText>}
 
-          <SubmitButton onPress={nextStep}>
-            <Ionicons name="arrow-forward" size={24} color="white" />
-          </SubmitButton>
-        </>
-      ) : (
-        <>
-          <InputLabel>Vehicle Status</InputLabel>
-          <StyledInput 
-            placeholder="Select Vehicle Status" 
-            value={vehicleStatus} 
-            onChangeText={setVehicleStatus} 
-            style={{ borderColor: vehicleStatusValid ? colors.primary : 'red' }}
-          />
-          {!vehicleStatusValid && <ErrorText>Vehicle Status invalid</ErrorText>}
+              <SubmitButton onPress={nextStep}>
+                <Ionicons name="arrow-forward" size={24} color="white" />
+              </SubmitButton>
 
-          <InputLabel>Vehicle Brand</InputLabel>
-          <StyledInput 
-            placeholder="Select Vehicle Brand" 
-            value={vehicleBrand} 
-            onChangeText={setVehicleBrand} 
-            style={{ borderColor: vehicleBrandValid ? colors.primary : 'red' }}
-          />
-          {!vehicleBrandValid && <ErrorText>Vehicle Brand invalid</ErrorText>}
+              <FooterText>You’re just a few steps away from earning a commission!</FooterText>
+            </>
+          ) : (
+            <>
+              <InputLabel>Vehicle Status</InputLabel>
+              <TouchableOpacity
+                onPress={() => setDropdownVisible(true)} // Abre el modal
+                style={{
+                  borderColor: vehicleStatusValid ? colors.primary : 'red',
+                  borderWidth: 1,
+                  borderRadius: 10,
+                  padding: 10,
+                  marginVertical: 5,
+                  backgroundColor: '#fff',
+                  width: '100%', // Ancho completo
+                }}
+              >
+                <Text>{vehicleStatus ? vehicleStatus : 'Select Vehicle Status'}</Text>
+              </TouchableOpacity>
+              {!vehicleStatusValid && <ErrorText>Vehicle Status invalid</ErrorText>}
 
-          <InputLabel>Vehicle Model</InputLabel>
-          <StyledInput 
-            placeholder="Select Vehicle Model" 
-            value={vehicleModel} 
-            onChangeText={setVehicleModel} 
-            style={{ borderColor: vehicleModelValid ? colors.primary : 'red' }}
-          />
-          {!vehicleModelValid && <ErrorText>Vehicle Model invalid</ErrorText>}
+              {/* Modal con botones tipo radio */}
+              <Modal
+                transparent={true}
+                visible={isDropdownVisible}
+                animationType="fade"
+                onRequestClose={() => setDropdownVisible(false)}
+              >
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                  }}
+                  onPress={() => setDropdownVisible(false)}
+                >
+                  <View
+                    style={{
+                      width: '80%',
+                      backgroundColor: 'white',
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    {/* Botones tipo radio con display flex */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}
+                        onPress={() => {
+                          setVehicleStatus('New');
+                          setDropdownVisible(false);
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: 20,
+                            width: 20,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: '#000',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 10,
+                          }}
+                        >
+                          {vehicleStatus === 'New' && (
+                            <View
+                              style={{
+                                height: 10,
+                                width: 10,
+                                borderRadius: 5,
+                                backgroundColor: '#000',
+                              }}
+                            />
+                          )}
+                        </View>
+                        <Text>New</Text>
+                      </TouchableOpacity>
 
-          <ButtonContainer>
-            <BackButton onPress={prevStep}>
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </BackButton>
-            <SaveButton onPress={saveReferral}>
-              <SaveButtonText>Save</SaveButtonText>
-            </SaveButton>
-          </ButtonContainer>
-        </>
-      )}
-    </Container>
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}
+                        onPress={() => {
+                          setVehicleStatus('Used');
+                          setDropdownVisible(false);
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: 20,
+                            width: 20,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: '#000',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 10,
+                          }}
+                        >
+                          {vehicleStatus === 'Used' && (
+                            <View
+                              style={{
+                                height: 10,
+                                width: 10,
+                                borderRadius: 5,
+                                backgroundColor: '#000',
+                              }}
+                            />
+                          )}
+                        </View>
+                        <Text>Used</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+
+              <InputLabel>Vehicle Brand</InputLabel>
+              <StyledInput 
+                placeholder="Select Vehicle Brand" 
+                value={vehicleBrand} 
+                onChangeText={setVehicleBrand} 
+                style={{ borderColor: vehicleBrandValid ? colors.primary : 'red' }}
+              />
+              {!vehicleBrandValid && <ErrorText>Vehicle Brand invalid</ErrorText>}
+
+              <InputLabel>Vehicle Model</InputLabel>
+              <StyledInput 
+                placeholder="Select Vehicle Model" 
+                value={vehicleModel} 
+                onChangeText={setVehicleModel} 
+                style={{ borderColor: vehicleModelValid ? colors.primary : 'red' }}
+              />
+              {!vehicleModelValid && <ErrorText>Vehicle Model invalid</ErrorText>}
+
+              {/* Campo para seleccionar dealerships */}
+              <InputLabel>Select Dealerships</InputLabel>
+              <TouchableOpacity
+                style={{
+                  borderColor: dealershipsValid ? colors.primary : 'red',
+                  borderWidth: 1,
+                  borderRadius: 10,
+                  padding: 10,
+                  marginVertical: 5,
+                  backgroundColor: '#fff',
+                  width: '100%',
+                }}
+                onPress={() => setDealershipDropdownVisible(true)}
+              >
+                <Text>{selectedDealerships.length > 0 ? selectedDealerships.join(', ') : 'Select Dealerships'}</Text>
+              </TouchableOpacity>
+              {!dealershipsValid && <ErrorText>Please select at least one dealership</ErrorText>}
+
+              {/* Dropdown de dealerships */}
+              <Modal
+                transparent={true}
+                visible={isDealershipDropdownVisible}
+                animationType="fade"
+                onRequestClose={() => setDealershipDropdownVisible(false)}
+              >
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                  }}
+                  onPress={() => setDealershipDropdownVisible(false)}
+                >
+                  <View
+                    style={{
+                      width: '80%',
+                      backgroundColor: 'white',
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    {dealerships.map(dealership => (
+                      <TouchableOpacity
+                        key={dealership}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}
+                        onPress={() => toggleDealership(dealership)}
+                      >
+                        <View
+                          style={{
+                            height: 20,
+                            width: 20,
+                            borderRadius: 5,
+                            borderWidth: 1,
+                            borderColor: '#000',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginRight: 10,
+                            backgroundColor: selectedDealerships.includes(dealership) ? '#000' : '#fff',
+                          }}
+                        >
+                          {selectedDealerships.includes(dealership) && (
+                            <Ionicons name="checkmark" size={16} color="#fff" />
+                          )}
+                        </View>
+                        <Text>{dealership}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+
+              <ButtonContainer>
+                <BackButton onPress={prevStep}>
+                  <Ionicons name="arrow-back" size={24} color="white" />
+                </BackButton>
+                <SaveButton onPress={saveReferral}>
+                  <SaveButtonText>Submit</SaveButtonText>
+                </SaveButton>
+              </ButtonContainer>
+            </>
+          )}
+        </Container>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -274,10 +489,11 @@ export default ReferralForm;
 // Estilos personalizados
 const Container = styled.View`
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   background-color: #f5f5f5;
   padding: 20px;
+  padding-top: 10px;
   border-radius: 20px;
 `;
 
@@ -302,6 +518,7 @@ const StyledInput = styled.TextInput`
   border: 1px solid ${colors.primary};
   border-radius: 10px;
   margin-top: 5px;
+  margin-bottom: 5px;
   padding-left: 10px;
   background-color: white;
 `;
@@ -320,6 +537,7 @@ const ErrorText = styled.Text`
   color: red;
   font-size: 14px;
   margin-top: 5px;
+  margin-top: -2px;
   align-self: flex-start;
 `;
 
@@ -352,4 +570,11 @@ const SaveButtonText = styled.Text`
   color: white;
   font-size: 18px;
   font-weight: bold;
+`;
+
+const FooterText = styled.Text`
+  color: ${colors.primary};
+  font-size: 16px;
+  text-align: center;
+  margin-top: 5px;
 `;

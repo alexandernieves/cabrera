@@ -24,10 +24,12 @@ const LoadingText = styled.Text`
 
 const StyledImage = styled(Animated.Image)`
   width: 100%;
-  height: 100%;
-  resize-mode: cover;
-  opacity: 0.75; /* Opacidad incrementada */
+  aspect-ratio: 1.5; /* Ajusta la relación de aspecto según la imagen */
+  resize-mode: contain; /* Muestra toda la imagen sin recortar ni estirar */
+  opacity: 0.75;
 `;
+
+
 
 const CustomSpinner = () => (
   <SpinnerContainer>

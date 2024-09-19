@@ -7,19 +7,6 @@ import { Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../App'; // Importa tu lista de rutas tipadas
 
-const avatars = [
-  require('../assets/1.png'),
-  require('../assets/2.png'),
-  require('../assets/3.png'),
-  require('../assets/4.png'),
-  require('../assets/5.png'),
-  require('../assets/6.png'),
-  require('../assets/7.png'),
-  require('../assets/8.png'),
-  require('../assets/9.png'),
-  require('../assets/10.png'),
-];
-
 // Styled Components
 const Container = styled.View`
   flex: 1;
@@ -75,11 +62,14 @@ const NoReferralsText = styled.Text`
   margin-top: 20px;
 `;
 
-const Avatar = styled.Image`
+const AvatarIcon = styled.View`
   width: 50px;
   height: 50px;
   border-radius: 25px;
   margin-right: 15px;
+  background-color: #002368; /* Azul de la empresa */
+  justify-content: center;
+  align-items: center;
 `;
 
 const ReferralInfo = styled.View`
@@ -189,11 +179,7 @@ export default function Referrals() {
 
         if (response.ok) {
           const data = await response.json();
-          const referralsWithAvatars = data.referrals.map((referral: any) => ({
-            ...referral,
-            avatar: avatars[Math.floor(Math.random() * avatars.length)], // Asignar avatar aleatorio
-          }));
-          setReferralsData(referralsWithAvatars);
+          setReferralsData(data.referrals);
         } else {
           const errorData = await response.json();
           Alert.alert('Error', errorData.message);
@@ -259,7 +245,10 @@ export default function Referrals() {
         ) : (
           currentData.map((referral, index) => (
             <ReferralCard key={index}>
-              <Avatar source={referral.avatar} />
+              {/* Icono de persona en lugar de imagen */}
+              <AvatarIcon>
+                <Ionicons name="person-outline" size={30} color="#fff" />
+              </AvatarIcon>
               <ReferralInfo>
                 <ReferralName>{referral.first_name} {referral.last_name}</ReferralName>
                 <BadgeContainer

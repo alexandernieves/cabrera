@@ -13,17 +13,25 @@ import Referrals from './screens/Referrals';
 import ReferralForm from './screens/ReferralForm';
 import Home from './screens/Home';
 import Chat from './screens/Chat';
+import InactiveUsersTable from './screens/InactiveUsersTable';
 import QRScreen from './screens/QRScreen';
 import InviteFriendsScreen from './screens/InviteFriendsScreen';
 import ImagePreloader from './components/ImagePreloader';
 import NoInternet from './screens/NoInternet';
 import SuccessAnimation from './components/SuccessAnimation';
 import PreloaderCircle from './components/PreloaderCircle';
+import UserTable from './screens/UserTable';  // Importa el nuevo componente
+import ActiveUsersTable from './screens/ActiveUsersTable';  // Importa el nuevo componente
+import ReferralTable from './screens/ReferralTable';  // Importa el nuevo componente
 import { CustomDrawerNavigator } from './screens/CustomDrawerNavigator';  // Asegúrate de importar el componente correctamente
 
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
+  InactiveUsersTable: undefined;
+  ActiveUsersTable: undefined;
+  ReferralTable:undefined;
+  UserTable: undefined;
   Signup: undefined;
   InviteFriendsScreen: undefined;
   ForgotPassword: undefined;
@@ -54,7 +62,11 @@ function MainStackNavigator() {
     >
       <Stack.Screen name="Welcome" component={Welcome} />
       <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="InactiveUsersTable" component={InactiveUsersTable} />
+      <Stack.Screen name="ActiveUsersTable" component={ActiveUsersTable} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="ReferralTable" component={ReferralTable} />
+      <Stack.Screen name="UserTable" component={UserTable} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="ConfirmCode" component={ConfirmCode} />
       <Stack.Screen name="DrawerNavigator" component={CustomDrawerNavigator} />
@@ -80,6 +92,8 @@ export default function App() {
     const checkAuthentication = async () => {
       try {
         const token = await AsyncStorage.getItem('jwtToken');
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Simula una espera de 3 segundos
+
         if (token) {
           // Verificar si el token es válido llamando al servidor
           const response = await axios.post('http://192.168.1.100:3000/verifyToken', { token });
