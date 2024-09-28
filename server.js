@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const sql = require('mssql'); // Reemplazar mysql por mssql
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -38,6 +38,10 @@ poolPromise = sql.connect(config)
 // Clave secreta para firmar los tokens JWT
 const secretKey = process.env.JWT_SECRET || '827d89c49894a0817ba2a74963ae486db9b5329b557eaa123e78731e718754ddc0fdd2034f1f45eef948aaff1b548631c9809d23668d56105c74181bd301411d';
 
+
+app.get('/ping', (req, res) => {
+  res.status(200).json({ message: 'El servidor está funcionando correctamente' });
+});
 // Ruta para registrar usuarios nuevos
 app.post('/signup', async (req, res) => {
   const { name, email, password, role } = req.body;
@@ -199,8 +203,11 @@ app.post('/referrals', async (req, res) => {
   const { first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status } = req.body;
 
   try {
-    const pool = await poolPromise;
+    const pool = await sql.connect(config);
+
+    // Insertar el nuevo referido en la base de datos
     const result = await pool.request()
+      .input('user_id', sql.Int, referred_by_user_id)
       .input('first_name', sql.NVarChar, first_name)
       .input('last_name', sql.NVarChar, last_name)
       .input('phone_number', sql.NVarChar, phone_number)
@@ -208,16 +215,21 @@ app.post('/referrals', async (req, res) => {
       .input('vehicle_status', sql.NVarChar, vehicle_status)
       .input('vehicle_brand', sql.NVarChar, vehicle_brand)
       .input('vehicle_model', sql.NVarChar, vehicle_model)
-      .input('referred_by_user_id', sql.Int, referred_by_user_id)
       .input('status', sql.NVarChar, status)
-      .query('INSERT INTO referrals (first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status) VALUES (@first_name, @last_name, @phone_number, @email, @vehicle_status, @vehicle_brand, @vehicle_model, @referred_by_user_id, @status)');
+      .query(`INSERT INTO referrals (user_id, first_name, last_name, phone_number, email, vehicle_status, vehicle_brand, vehicle_model, referred_by_user_id, status) 
+              OUTPUT inserted.id 
+              VALUES (@user_id, @first_name, @last_name, @phone_number, @email, @vehicle_status, @vehicle_brand, @vehicle_model, @user_id, @status)`);
 
-    res.status(201).json({ message: 'Referral saved successfully', referralId: result.recordset.insertId });
+    // Obtener el ID insertado desde result.recordset[0]
+    const referralId = result.recordset[0].id;
+
+    res.status(201).json({ message: 'Referral saved successfully', referralId });
   } catch (error) {
     console.error('Error saving referral:', error.message);
     res.status(500).json({ message: `Failed to save referral: ${error.message}` });
   }
 });
+
 
 // Ruta para contar los referidos pendientes
 app.get('/referrals/count-pending', async (req, res) => {

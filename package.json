@@ -28,7 +28,7 @@
     "bcryptjs": "^2.4.3",
     "chalk": "^5.3.0",
     "dotenv": "^11.0.0",
-    "expo": "~51.0.28",
+    "expo": "^49.0.23",
     "expo-auth-session": "~5.5.2",
     "expo-constants": "~16.0.2",
     "expo-crypto": "~13.0.2",
