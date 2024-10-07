@@ -93,12 +93,13 @@ export default function Welcome() {
       </CurvedContainer>
       <Footer>
         <Button onPress={() => navigation.navigate('Login')}>
-          <ButtonText>Log in</ButtonText>
+          <ButtonText>Get started</ButtonText>
         </Button>
         <LoginText>
-          Don't have an account? <SignUpText>Sign Up</SignUpText>
+        Sign up, refer friends, and get paid{"\n"}when they buy a car!
         </LoginText>
       </Footer>
     </Container>
   );
 }
+

@@ -7,14 +7,38 @@ import {
   Animated, 
   ActivityIndicator 
 } from "react-native";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebase";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styled from 'styled-components/native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../App';
+import { useNavigation } from '@react-navigation/native'; 
+import { StackNavigationProp } from '@react-navigation/stack'; 
+import { RootStackParamList } from '../App'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios'; // Para manejar las peticiones al servidor
 
+// Definir el tipo DecodedToken (puedes ajustar este tipo según el contenido de tu JWT)
+type DecodedToken = {
+  sub: string;
+  email: string;
+  iat: number;
+  exp: number;
+  // Otros campos según tu JWT
+} | null;
+
+// Función para decodificar JWT con JavaScript nativo
+function decodeJWT(token: string): DecodedToken {
+  try {
+    const base64Url = token.split('.')[1]; 
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); 
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decodificando el JWT", error);
+    return null;
+  }
+}
 
 const InputContainer = styled(Animated.View)`
   flex-direction: row;
@@ -42,8 +66,8 @@ const ButtonContainer = styled.View`
 `;
 
 const RoundedButton = styled(Animated.createAnimatedComponent(TouchableOpacity))`
-  background-color: #002368; /* Color de fondo azul oscuro */
-  border-radius: 30px; /* Bordes redondeados */
+  background-color: #002368;
+  border-radius: 30px;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -53,7 +77,7 @@ const RoundedButton = styled(Animated.createAnimatedComponent(TouchableOpacity))
 
 const RoundedButtonText = styled.Text`
   font-weight: bold;
-  color: #fff; /* Texto blanco */
+  color: #fff;
   font-size: 18px;
   border-radius: 100px;
 `;
@@ -72,10 +96,9 @@ const TermsText = styled.Text`
 `;
 
 const LinkText = styled.Text`
-  color: #E91E63; /* Color del link */
+  color: #E91E63;
   font-size: 14px;
-  text-decoration: underline;
-  margin-left: 5px;
+  margin-left: 0px; /* Eliminar el margen izquierdo */
 `;
 
 const CustomCheckbox = styled.TouchableOpacity`
@@ -104,7 +127,7 @@ const ErrorText = styled.Text`
 `;
 
 export default function Signup() { 
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>(); 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -115,7 +138,6 @@ export default function Signup() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
 
   const buttonWidth = useRef(new Animated.Value(300)).current;
   const buttonHeight = useRef(new Animated.Value(58)).current;
@@ -126,144 +148,99 @@ export default function Signup() {
   const nameShake = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (signupSuccess) {
-      Animated.parallel([
-        Animated.timing(buttonWidth, {
-          toValue: 58,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-        Animated.timing(buttonHeight, {
-          toValue: 58,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-        Animated.timing(borderRadius, {
-          toValue: 29,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-      ]).start(() => {
-        navigation.navigate('Success', {
-          nextScreen: 'Home', // Nombre de la pantalla destino
-        });
-      });
-    }
-  }, [signupSuccess]);
-
-  useEffect(() => {
     if (emailError || passwordError || nameError) {
-      Animated.sequence([
-        Animated.timing(emailShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailShake, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Animación de error en campos si hay errores
+      const shakeAnimation = (shakeAnim: Animated.Value) => {
+        Animated.sequence([
+          Animated.timing(shakeAnim, {
+            toValue: 10,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: -10,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: 10,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      };
 
-      Animated.sequence([
-        Animated.timing(passwordShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(passwordShake, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      Animated.sequence([
-        Animated.timing(nameShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(nameShake, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(nameShake, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(nameShake, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      shakeAnimation(emailShake);
+      shakeAnimation(passwordShake);
+      shakeAnimation(nameShake);
     }
   }, [emailError, passwordError, nameError]);
 
-  const onHandleSignUp = () => {
+  const onHandleSignUp = async () => {
     setEmailError(false);
     setPasswordError(false);
     setNameError(false);
-
+  
     if (name === "") {
       setNameError(true);
       return;
     }
-
+  
     if (email === "") {
       setEmailError(true);
       return;
     }
-
+  
     if (password === "") {
       setPasswordError(true);
       return;
     }
-
+  
     if (!acceptedTerms) {
       alert("You must accept the terms and conditions to sign up.");
       return;
     }
-
+  
     setIsLoading(true);
-
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(async () => {
-        console.log('Signup success');
-        await AsyncStorage.setItem('username', name);  // Guarda el nombre de usuario
-        setIsLoading(false);
-        setSignupSuccess(true);
-      })
-      .catch((err) => {
-        console.error("Signup error", err.message);
-        setIsLoading(false);
-        Alert.alert("Signup error", err.message);
+  
+    // Realizamos la petición al backend para crear el usuario
+    try {
+      const response = await axios.post('http://localhost:3000/signup', {
+        name,
+        email,
+        password
       });
+  
+      if (response.data.token) {
+        // Almacenar el token en AsyncStorage
+        await AsyncStorage.setItem('jwtToken', response.data.token);
+        console.log("Token guardado correctamente");
+  
+        const decodedToken = decodeJWT(response.data.token);
+        console.log("Token decodificado: ", decodedToken);
+  
+        await AsyncStorage.setItem('username', name);
+        setIsLoading(false);
+  
+        // Redirigir a PreloaderCircle y luego a SuccessAnimation
+        navigation.replace('PreloaderCircle', {
+          nextScreen: 'SuccessAnimation', // Después de la precarga, se mostrará la animación de éxito
+        });
+      } else {
+        setIsLoading(false);
+        console.log("Error: No se pudo registrar el usuario");
+      }
+    } catch (error) {
+      setIsLoading(false);
+      console.error("Signup error", error);
+    }
   };
+  
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -288,7 +265,7 @@ export default function Signup() {
           autoCapitalize="none"
           autoFocus={true}
           value={name}
-          onChangeText={(text: string) => setName(text)}
+          onChangeText={setName}
         />
       </InputContainer>
       {nameError && <ErrorText>Name is required</ErrorText>}
@@ -301,12 +278,12 @@ export default function Signup() {
           keyboardType="email-address"
           textContentType="emailAddress"
           value={email}
-          onChangeText={(text: string) => setEmail(text)}
+          onChangeText={setEmail}
         />
       </InputContainer>
       {emailError && <ErrorText>Email is required</ErrorText>}
 
-            <InputContainer style={[passwordError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(passwordShake)]}>
+      <InputContainer style={[passwordError && { borderColor: 'red', borderWidth: 1.5 }, shakeStyle(passwordShake)]}>
         <Icon name="lock-closed-outline" size={24} color="#888" />
         <StyledInput
           placeholder="Create a password"
@@ -315,7 +292,7 @@ export default function Signup() {
           secureTextEntry={!passwordVisible}
           textContentType="password"
           value={password}
-          onChangeText={(text: string) => setPassword(text)}
+          onChangeText={setPassword}
         />
         <TouchableOpacity onPress={togglePasswordVisibility}>
           <Ionicons
@@ -347,8 +324,6 @@ export default function Signup() {
         >
           {isLoading ? (
             <ActivityIndicator size="small" color="#FFF" />
-          ) : signupSuccess ? (
-            <Ionicons name="checkmark" size={30} color="white" />
           ) : (
             <RoundedButtonText>Sign Up</RoundedButtonText>
           )}
